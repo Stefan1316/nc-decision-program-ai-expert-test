@@ -1,6 +1,7 @@
 import { buildExpertContext } from '../src/aiExpert/buildExpertContext';
 import { evaluatePrograms } from '../src/logic/decisionEngine';
 import { UserQuery } from '../src/types/damu';
+import { composeExpertAnswer, findMentionedProgram } from '../src/aiExpert/composeExpertAnswer';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -81,3 +82,25 @@ console.log(JSON.stringify({
   },
   iskerSources: isker?.sources.map((s) => s.sourceId) || []
 }, null, 2));
+
+
+// AI Expert v1.1 regressions
+const orleu = context.decisions.find((d) => /orleu|орлеу|өрлеу/i.test(d.programId + ' ' + d.programName));
+if (orleu) {
+  const resolved = findMentionedProgram(context, 'Почему мне подходит Өрлеу?');
+  assert(resolved?.programId === orleu.programId, 'AI Expert must resolve named program Өрлеу');
+  const targeted = composeExpertAnswer(context, 'Почему мне подходит Өрлеу?');
+  assert(targeted.title.includes(orleu.programName), 'Targeted answer must name concrete program');
+}
+
+const whyMatches = composeExpertAnswer(context, 'Почему эти программы подходят?');
+for (const pending of context.decisions.filter((d) => d.decisionStatus === 'needs_clarification' || d.decisionStatus === 'needs_verification')) {
+  const line = whyMatches.body.find((x) => x.startsWith(pending.programName + ':'));
+  if (line) assert(/пока не подтверждена|нужны дополнительные данные|требуется верификация/i.test(line), 'Pending result must not be described as confirmed');
+}
+
+const clarify = composeExpertAnswer(context, 'Что нужно уточнить?');
+const businessCategoryLines = clarify.body.filter((x) => /категори.*бизнес|микро|малый|средний|крупный/i.test(x));
+assert(businessCategoryLines.length <= 1, 'Repeated business-category clarifications must be aggregated');
+
+console.log('AI Expert v1.1 regressions: OK');
