@@ -1,0 +1,43 @@
+name: Sync official OKED master
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 3 * * 1'
+  push:
+    paths:
+      - 'scripts/sync_oked_master.py'
+      - '.github/workflows/sync-oked-master.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build OKED master from official BNS source
+        run: python3 scripts/sync_oked_master.py
+      - name: Validate generated classifier
+        run: |
+          python3 - <<'PY'
+          import re
+          text=open('src/data/okedMaster.generated.ts',encoding='utf-8').read()
+          count=text.count('"rawCode":')
+          assert count > 1000, f'Unexpectedly small OKED master: {count}'
+          for fixture in ['"code":"01.290"','"code":"03.2"','"code":"25.11"','"code":"56.101"','"code":"62.01"']:
+              assert fixture in text, f'Missing fixture {fixture}'
+          print('Validated records:', count)
+          PY
+      - name: Commit changes when classifier changed
+        run: |
+          if git diff --quiet -- src/data/okedMaster.generated.ts; then
+            echo "Official OKED classifier unchanged."
+            exit 0
+          fi
+          git config user.name "nc-decision-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add src/data/okedMaster.generated.ts
+          git commit -m "data: sync official BNS OKED master"
+          git push
