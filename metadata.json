@@ -1,0 +1,6 @@
+{
+  "name": "NC Decision Program",
+  "description": "Демо AI агента Damu по точному ОКЭД и территории на основе закрытой базы знаний Damu v2 от NC Consulting.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
