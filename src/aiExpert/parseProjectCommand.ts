@@ -21,11 +21,20 @@ function normalize(text: string): string {
 
 function parseAmount(text: string): number | null {
   const q = normalize(text);
-  const match = q.match(/(?:сумм\w*|финансирован\w*|запрос\w*)?\s*(\d+(?:[.,]\d+)?)\s*(млрд|миллиард|млн|миллион|тыс|тысяч)?\s*(?:тг|тенге)?/i);
+  const match = q.match(/(\d{1,3}(?:[\s.]\d{3})+|\d+(?:[.,]\d+)?)\s*(млрд|миллиард|млн|миллион|тыс|тысяч)?\s*(?:тг|тенге)?/i);
   if (!match) return null;
-  const raw = Number(match[1].replace(',', '.'));
-  if (!Number.isFinite(raw)) return null;
+
   const unit = (match[2] || '').toLowerCase();
+  const numericText = match[1];
+
+  let raw: number;
+  if (unit) {
+    raw = Number(numericText.replace(/\s/g, '').replace(',', '.'));
+  } else {
+    raw = Number(numericText.replace(/[\s.]/g, '').replace(',', '.'));
+  }
+
+  if (!Number.isFinite(raw)) return null;
   if (/млрд|миллиард/.test(unit)) return Math.round(raw * 1_000_000_000);
   if (/млн|миллион/.test(unit)) return Math.round(raw * 1_000_000);
   if (/тыс|тысяч/.test(unit)) return Math.round(raw * 1_000);
@@ -66,7 +75,8 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
     summaryLines.push(`ОКЭД → ${value}`);
   }
 
-  if (/сумм|финансирован|запрос/.test(q)) {
+  const explicitAmountCue = /сумм|размер\s+финансирован|объем\s+финансирован|объём\s+финансирован|запрашива.*сумм|запрос.*(?:тг|тенге|млн|млрд)/.test(q);
+  if (explicitAmountCue) {
     const amount = parseAmount(text);
     if (amount) {
       changes.push({ field:'amount_kzt', value:amount });
