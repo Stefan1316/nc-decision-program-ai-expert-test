@@ -1,7 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Bot, X, Send, ShieldCheck, ExternalLink, Sparkles } from 'lucide-react';
-import { ExpertContext } from '../aiExpert/types';
-import { composeExpertAnswer, ExpertAnswer } from '../aiExpert/composeExpertAnswer';
+import { Bot, X, Send, ShieldCheck, ExternalLink, Sparkles, Check, RotateCcw } from 'lucide-react';
+import { ExpertContext, ExpertParameterChange } from '../aiExpert/types';
+import { composeExpertAnswer, ExpertAnswer, detectExpertIntent } from '../aiExpert/composeExpertAnswer';
+import { parseProjectCommand, ParsedProjectCommand } from '../aiExpert/parseProjectCommand';
+import { compareExpertContexts } from '../aiExpert/compareExpertContexts';
 import { ThemeMode } from '../i18n/translations';
 
 interface AIExpertPanelProps {
@@ -9,6 +11,13 @@ interface AIExpertPanelProps {
   onClose: () => void;
   context: ExpertContext | null;
   theme: ThemeMode;
+  onApplyChanges: (changes: ExpertParameterChange[]) => ExpertContext;
+}
+
+interface ConversationTurn {
+  id: number;
+  question: string;
+  answer: ExpertAnswer;
 }
 
 const quickQuestions = [
@@ -20,10 +29,18 @@ const quickQuestions = [
   'Покажи официальные источники'
 ];
 
-export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, context, theme }) => {
+export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
+  isOpen,
+  onClose,
+  context,
+  theme,
+  onApplyChanges
+}) => {
   const isLight = theme === 'light';
   const [question, setQuestion] = useState('');
-  const [history, setHistory] = useState<Array<{ id: number; question: string; answer: ExpertAnswer }>>([]);
+  const [history, setHistory] = useState<ConversationTurn[]>([]);
+  const [pendingCommand, setPendingCommand] = useState<ParsedProjectCommand | null>(null);
+  const [commandQuestion, setCommandQuestion] = useState('');
   const turnId = React.useRef(1);
 
   const sourceMap = useMemo(() => {
@@ -40,16 +57,83 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, c
     if (!isOpen) return;
     setQuestion('');
     setHistory([]);
+    setPendingCommand(null);
+    setCommandQuestion('');
     turnId.current = 1;
-  }, [isOpen, context]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
+
+  const pushTurn = (questionText: string, answer: ExpertAnswer) => {
+    setHistory((prev) => [...prev, { id: turnId.current++, question: questionText, answer }]);
+  };
 
   const ask = (text: string) => {
     if (!context || !text.trim()) return;
     const clean = text.trim();
-    setHistory((prev) => [...prev, { id: turnId.current++, question: clean, answer: composeExpertAnswer(context, clean) }]);
+    const parsed = parseProjectCommand(clean);
+    const intent = detectExpertIntent(clean);
+
+    if (parsed.recognized && intent === 'change_project_parameter') {
+      setPendingCommand(parsed);
+      setCommandQuestion(clean);
+      pushTurn(clean, {
+        intent: 'change_project_parameter',
+        title: 'Проверка команды перед пересчётом',
+        body: [
+          'Я распознал изменение параметров проекта. Пока ничего не изменено.',
+          ...parsed.summaryLines.map((line) => `Будет изменено: ${line}.`),
+          ...(parsed.unresolved.length ? ['Требует уточнения: ' + parsed.unresolved.join(' ')] : []),
+          'Если всё верно, подтвердите команду — после этого decision engine выполнит новый расчёт.'
+        ],
+        sourceIds: []
+      });
+      setQuestion('');
+      return;
+    }
+
+    if (intent === 'change_project_parameter' && !parsed.recognized) {
+      pushTurn(clean, {
+        intent,
+        title: 'Не удалось однозначно распознать изменение',
+        body: [
+          'Команда похожа на изменение параметров проекта, но я не смог определить новое значение.',
+          'Укажите параметр и значение, например: «Проверь другой ОКЭД — 45.20», «Измени сумму на 300 млн тенге» или «Проверь Алматы».'
+        ],
+        sourceIds: []
+      });
+      setQuestion('');
+      return;
+    }
+
+    setPendingCommand(null);
+    setCommandQuestion('');
+    pushTurn(clean, composeExpertAnswer(context, clean));
     setQuestion('');
+  };
+
+  const applyPendingCommand = () => {
+    if (!context || !pendingCommand?.changes.length) return;
+    const before = context;
+    const after = onApplyChanges(pendingCommand.changes);
+    const diff = compareExpertContexts(before, after);
+
+    pushTurn('Подтвердить изменения и пересчитать', {
+      intent: 'change_project_parameter',
+      title: 'Новый расчёт выполнен',
+      body: [
+        'Изменения применены через decision engine.',
+        ...diff.lines
+      ],
+      sourceIds: Array.from(new Set(
+        after.decisions
+          .filter((d) => diff.changedProgramIds.includes(d.programId))
+          .flatMap((d) => d.sources.map((s) => s.sourceId))
+      ))
+    });
+
+    setPendingCommand(null);
+    setCommandQuestion('');
   };
 
   return (
@@ -68,7 +152,7 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, c
             <div className="min-w-0">
               <div className={`font-extrabold text-sm sm:text-base ${isLight ? 'text-slate-950' : 'text-[#F4F7FF]'}`}>NC Decision AI Expert</div>
               <div className={`text-[11px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                Объясняет результат decision engine · не меняет правила программ
+                Объясняет и меняет параметры только через decision engine
               </div>
             </div>
           </div>
@@ -84,9 +168,9 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, c
             <div className={`p-3 rounded-xl border text-xs ${
               isLight ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-emerald-950/20 border-emerald-500/20 text-emerald-200'
             }`}>
-              <div className="flex items-center gap-2 font-bold"><ShieldCheck className="w-4 h-4" /> Контекст зафиксирован</div>
+              <div className="flex items-center gap-2 font-bold"><ShieldCheck className="w-4 h-4" /> Текущий контекст</div>
               <div className="mt-1 opacity-80">
-                ОКЭД {context.project.okedCode}{context.project.region ? ` · ${context.project.region}` : ''}{context.project.district ? ` · ${context.project.district}` : ''}
+                ОКЭД {context.project.okedCode}{context.project.region ? ` · ${context.project.region}` : ''}{context.project.district ? ` · ${context.project.district}` : ''}{context.project.amountKzt ? ` · ${context.project.amountKzt.toLocaleString('ru-RU')} ₸` : ''}
               </div>
             </div>
 
@@ -153,7 +237,39 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, c
               <div className={`rounded-2xl border p-5 text-center text-xs leading-relaxed ${
                 isLight ? 'bg-slate-50 border-slate-200 text-slate-600' : 'bg-[#0D1127] border-[#24304C] text-slate-400'
               }`}>
-                Выберите быстрый вопрос или задайте свой. На этом этапе ответы формируются строго из результата decision engine и официальных источников текущего анализа.
+                Можно не только задавать вопросы, но и менять параметры проекта: например «Проверь другой ОКЭД — 45.20».
+              </div>
+            )}
+
+            {pendingCommand && (
+              <div className={`rounded-2xl border p-4 ${
+                isLight ? 'bg-amber-50 border-amber-200' : 'bg-amber-950/20 border-amber-500/25'
+              }`}>
+                <div className={`text-xs font-bold ${isLight ? 'text-amber-950' : 'text-amber-200'}`}>Подтверждение изменения</div>
+                <div className={`mt-2 space-y-1 text-xs ${isLight ? 'text-amber-900' : 'text-amber-100'}`}>
+                  {pendingCommand.summaryLines.map((line) => <div key={line}>• {line}</div>)}
+                  {pendingCommand.unresolved.map((line) => <div key={line}>• Нужно уточнить: {line}</div>)}
+                </div>
+                <div className="mt-3 flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={applyPendingCommand}
+                    disabled={pendingCommand.unresolved.length > 0}
+                    className="px-3.5 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold flex items-center justify-center gap-2 disabled:opacity-40"
+                  >
+                    <Check className="w-4 h-4" /> Применить и пересчитать
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setPendingCommand(null); setCommandQuestion(''); }}
+                    className={`px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 ${
+                      isLight ? 'bg-white border-amber-200 text-amber-900' : 'bg-transparent border-amber-500/30 text-amber-200'
+                    }`}
+                  >
+                    <RotateCcw className="w-4 h-4" /> Отменить
+                  </button>
+                </div>
+                {commandQuestion && <div className="mt-2 text-[10px] opacity-60">Команда: {commandQuestion}</div>}
               </div>
             )}
           </div>
@@ -165,7 +281,7 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, c
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               disabled={!context}
-              placeholder="Например: почему мне подходит «Өрлеу»?"
+              placeholder="Например: проверь другой ОКЭД — 45.20"
               className={`flex-1 min-w-0 px-3 py-2.5 rounded-xl border text-sm outline-none ${
                 isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-violet-400' : 'bg-[#060814] border-[#24304C] text-[#F4F7FF] focus:border-violet-500'
               }`}
@@ -175,7 +291,7 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, c
             </button>
           </form>
           <div className={`mt-2 text-[10px] ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>
-            AI Expert объясняет результат системы и не заменяет решение Фонда «Даму», банка или иного финансового института.
+            Любое изменение сначала подтверждается пользователем, затем пересчитывается decision engine.
           </div>
         </div>
       </div>
