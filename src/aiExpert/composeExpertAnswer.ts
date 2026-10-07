@@ -17,6 +17,70 @@ function activeDecisions(context: ExpertContext) {
   return context.decisions.filter((d) => activeStatuses.has(d.decisionStatus));
 }
 
+
+function normalizeProgramText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[«»"'()[\]{}.,:;!?/\\_-]/g, ' ')
+    .replace(/ө/g, 'о')
+    .replace(/ә/g, 'а')
+    .replace(/і/g, 'и')
+    .replace(/қ/g, 'к')
+    .replace(/ү/g, 'у')
+    .replace(/ұ/g, 'у')
+    .replace(/ң/g, 'н')
+    .replace(/һ/g, 'х')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function aliasesForProgram(program: ExpertContext['decisions'][number]): string[] {
+  const name = normalizeProgramText(program.programName);
+  const id = normalizeProgramText(program.programId);
+  const aliases = new Set<string>([name, id]);
+
+  if (/орлеу|orleu/.test(name + ' ' + id)) ['орлеу','өрлеу','orleu'].forEach((v) => aliases.add(normalizeProgramText(v)));
+  if (/искер|isker/.test(name + ' ' + id)) ['искер аймак','іскер аймақ','isker aymak'].forEach((v) => aliases.add(normalizeProgramText(v)));
+  if (/gf1|гарантийн.*фонд 1/.test(name + ' ' + id)) ['гф1','гф 1','гарантийный фонд 1'].forEach((v) => aliases.add(normalizeProgramText(v)));
+  if (/gf2|гарантийн.*фонд 2/.test(name + ' ' + id)) ['гф2','гф 2','гарантийный фонд 2'].forEach((v) => aliases.add(normalizeProgramText(v)));
+
+  for (const token of name.split(' ')) if (token.length >= 6) aliases.add(token);
+  return Array.from(aliases).filter((v) => v.length >= 3);
+}
+
+export function findMentionedProgram(context: ExpertContext, text: string) {
+  const q = normalizeProgramText(text);
+  const scored = context.decisions
+    .map((program) => {
+      const hit = aliasesForProgram(program).filter((alias) => q.includes(alias)).sort((a,b) => b.length - a.length)[0];
+      return { program, score: hit?.length || 0 };
+    })
+    .filter((row) => row.score > 0)
+    .sort((a,b) => b.score - a.score);
+  return scored[0]?.program || null;
+}
+
+function humanizeMissingInputs(items: string[]): string[] {
+  const raw = uniq(items);
+  const q = raw.map((item) => ({ item, normalized: normalizeProgramText(item) }));
+  const result: string[] = [];
+
+  if (q.some(({normalized}) => /категор.*бизнес|микро предприним|малое и среднее|малое среднее и крупное|форма заявителя/.test(normalized))) {
+    result.push('Уточните категорию бизнеса: микро / малый / средний / крупный и организационно-правовую форму заявителя.');
+  }
+  if (q.some(({normalized}) => /сумм|лимит финанс/.test(normalized))) result.push('Уточните требуемую сумму финансирования.');
+  if (q.some(({normalized}) => /цель|назначен|инвестиц|оборотн|рефинанс|лизинг/.test(normalized))) result.push('Уточните цель финансирования: инвестиции / оборотные средства / рефинансирование / лизинг.');
+  if (q.some(({normalized}) => /район|город|населен|территор/.test(normalized))) result.push('Уточните точную территорию реализации проекта: область, город/район и тип населённого пункта.');
+  if (q.some(({normalized}) => /социальн.*реестр|реестр.*социаль/.test(normalized))) result.push('Уточните наличие записи в реестре субъектов социального предпринимательства.');
+  if (q.some(({normalized}) => /просроч|задолж|налог/.test(normalized))) result.push('Уточните наличие текущей просроченной кредитной или налоговой задолженности.');
+  if (q.some(({normalized}) => /облигац/.test(normalized))) result.push('Уточните, планируется ли финансирование через выпуск/размещение облигаций.');
+
+  const covered = (s: string) => /категор.*бизнес|микро предприним|малое и среднее|малое среднее и крупное|форма заявителя|сумм|лимит финанс|цель|назначен|инвестиц|оборотн|рефинанс|лизинг|район|город|населен|территор|социальн.*реестр|реестр.*социаль|просроч|задолж|налог|облигац/.test(s);
+  for (const row of q) if (!covered(row.normalized)) result.push(row.item);
+
+  return uniq(result).slice(0,8);
+}
+
 export function detectExpertIntent(text: string): ExpertIntent {
   const q = text.toLowerCase();
   if (/источник|ссылка|регламент|официал/.test(q)) return 'show_sources';
@@ -31,13 +95,48 @@ export function detectExpertIntent(text: string): ExpertIntent {
 
 export function composeExpertAnswer(context: ExpertContext, userText: string): ExpertAnswer {
   const intent = detectExpertIntent(userText);
+  const mentioned = findMentionedProgram(context, userText);
   const active = activeDecisions(context);
+
+  if (mentioned && ['why_matches','why_not','show_sources','what_to_clarify','next_steps','explain_summary'].includes(intent)) {
+    const sourceIds = uniq(mentioned.sources.map((s) => s.sourceId));
+    if (intent === 'show_sources') {
+      return {
+        intent,
+        title: `Официальные источники: ${mentioned.programName}`,
+        body: mentioned.sources.length
+          ? mentioned.sources.map((s) => `${s.title}; проверено ${s.checkedOn}.`)
+          : ['По этой программе официальный источник в текущем контексте не прикреплён — требуется верификация.'],
+        sourceIds
+      };
+    }
+
+    const statusText =
+      mentioned.decisionStatus === 'exact_match' ? 'Соответствие подтверждено по текущим данным.' :
+      mentioned.decisionStatus === 'possible_match' ? 'Программа потенциально подходит по текущим данным, но это не окончательное одобрение.' :
+      mentioned.decisionStatus === 'needs_clarification' ? 'Программа пока не подтверждена: не хватает данных пользователя.' :
+      mentioned.decisionStatus === 'needs_verification' ? 'Программа пока не подтверждена: требуется верификация условия или источника.' :
+      'Программа не применима по текущим параметрам.';
+
+    const body = [statusText, `Текущий статус: «${mentioned.decisionLabel}».`];
+    if (mentioned.matchedReasons[0] && mentioned.decisionStatus !== 'not_applicable') body.push(`Основание: ${mentioned.matchedReasons[0]}`);
+    if (mentioned.restrictions[0]) body.push(`Ограничение/условие: ${mentioned.restrictions[0]}`);
+    const missing = humanizeMissingInputs(mentioned.missingInputs);
+    if (missing.length) body.push(`Что уточнить: ${missing.join(' ')}`);
+
+    return {
+      intent,
+      title: `${mentioned.programName}: разбор по текущему проекту`,
+      body,
+      sourceIds
+    };
+  }
   const excluded = context.decisions.filter((d) => d.decisionStatus === 'not_applicable');
   const sourceIds = uniq(context.decisions.flatMap((d) => d.sources.map((s) => s.sourceId)));
 
   if (intent === 'show_sources') {
     const rows = uniq(context.decisions.flatMap((d) => d.sources.map((s) =>
-      `${s.sourceId} — ${s.title}; проверено ${s.checkedOn}`
+      `${s.title}; проверено ${s.checkedOn}`
     )));
     return {
       intent,
@@ -61,7 +160,7 @@ export function composeExpertAnswer(context: ExpertContext, userText: string): E
   }
 
   if (intent === 'what_to_clarify') {
-    const missing = uniq(active.flatMap((d) => d.missingInputs));
+    const missing = humanizeMissingInputs(active.flatMap((d) => d.missingInputs));
     return {
       intent,
       title: 'Что требуется уточнить',
@@ -95,14 +194,34 @@ export function composeExpertAnswer(context: ExpertContext, userText: string): E
   }
 
   if (intent === 'why_matches') {
-    const rows = active.slice(0, 5).map((d) => {
-      const reason = d.matchedReasons[0] || 'Программа не содержит подтверждённого запрета по текущим данным.';
-      return `${d.programName}: ${reason}`;
-    });
+    const confirmed = active.filter((d) => d.decisionStatus === 'exact_match' || d.decisionStatus === 'possible_match');
+    const pending = active.filter((d) => d.decisionStatus === 'needs_clarification' || d.decisionStatus === 'needs_verification');
+    const body: string[] = [];
+
+    if (confirmed.length) {
+      body.push('Подтверждённые / потенциально подходящие программы:');
+      for (const d of confirmed.slice(0,5)) {
+        const status = d.decisionStatus === 'exact_match'
+          ? 'соответствие подтверждено'
+          : 'потенциально подходит';
+        body.push(`${d.programName}: ${status}. ${d.matchedReasons[0] || ''}`.trim());
+      }
+    }
+
+    if (pending.length) {
+      body.push('Отдельно требуют уточнения или верификации — это ещё не подтверждённое соответствие:');
+      for (const d of pending.slice(0,4)) {
+        const status = d.decisionStatus === 'needs_clarification'
+          ? 'нужны дополнительные данные'
+          : 'требуется верификация';
+        body.push(`${d.programName}: программа пока не подтверждена; ${status}.`);
+      }
+    }
+
     return {
       intent,
       title: 'Почему система показывает эти программы',
-      body: rows.length ? rows : ['Подходящие или требующие уточнения программы по текущим данным не найдены.'],
+      body: body.length ? body : ['Подходящие или требующие проверки программы по текущим данным не найдены.'],
       sourceIds: uniq(active.flatMap((d) => d.sources.map((s) => s.sourceId)))
     };
   }
