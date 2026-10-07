@@ -89,7 +89,7 @@ export function detectExpertIntent(text: string): ExpertIntent {
   if (/дальше|следующ|что делать|порядок действий/.test(q)) return 'next_steps';
   if (/сравн|лучше|выгодн/.test(q)) return 'compare_programs';
   if (/почему.*подход|почему.*показыва|подходит/.test(q)) return 'why_matches';
-  if (/помен|измени|проверь другой|другой окэд|другую сумму|другой район|другой регион/.test(q)) return 'change_project_parameter';
+  if (/помен|измени|установ|постав|проверь.*(окэд|сумм|регион|област|город|район|территор|цель)|другой окэд|другую сумму|другой район|другой регион/.test(q)) return 'change_project_parameter';
   return 'explain_summary';
 }
 
