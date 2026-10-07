@@ -23,7 +23,8 @@ const quickQuestions = [
 export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, context, theme }) => {
   const isLight = theme === 'light';
   const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState<ExpertAnswer | null>(null);
+  const [history, setHistory] = useState<Array<{ id: number; question: string; answer: ExpertAnswer }>>([]);
+  const turnId = React.useRef(1);
 
   const sourceMap = useMemo(() => {
     const map = new Map<string, { title: string; url: string; checkedOn: string }>();
@@ -35,12 +36,20 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, c
     return map;
   }, [context]);
 
+  React.useEffect(() => {
+    if (!isOpen) return;
+    setQuestion('');
+    setHistory([]);
+    turnId.current = 1;
+  }, [isOpen, context]);
+
   if (!isOpen) return null;
 
   const ask = (text: string) => {
     if (!context || !text.trim()) return;
-    setQuestion(text);
-    setAnswer(composeExpertAnswer(context, text));
+    const clean = text.trim();
+    setHistory((prev) => [...prev, { id: turnId.current++, question: clean, answer: composeExpertAnswer(context, clean) }]);
+    setQuestion('');
   };
 
   return (
@@ -91,37 +100,54 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({ isOpen, onClose, c
               ))}
             </div>
 
-            {answer ? (
-              <div className={`rounded-2xl border p-4 sm:p-5 ${
-                isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#0D1127] border-[#24304C]'
-              }`}>
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-violet-400" />
-                  <div className={`font-bold text-sm ${isLight ? 'text-slate-950' : 'text-[#F4F7FF]'}`}>{answer.title}</div>
-                </div>
-                <div className="space-y-2">
-                  {answer.body.map((line, idx) => (
-                    <div key={idx} className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>{line}</div>
-                  ))}
-                </div>
-                {answer.sourceIds.length > 0 && (
-                  <div className={`mt-4 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-[#24304C]'}`}>
-                    <div className={`text-[10px] uppercase tracking-wider font-bold mb-2 ${isLight ? 'text-slate-500' : 'text-slate-500'}`}>Официальные источники</div>
-                    <div className="flex flex-wrap gap-2">
-                      {answer.sourceIds.map((id) => {
-                        const source = sourceMap.get(id);
-                        if (!source) return <span key={id} className="text-[10px] font-mono">{id}</span>;
-                        return (
-                          <a key={id} href={source.url} target="_blank" rel="noreferrer noopener" className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-semibold ${
-                            isLight ? 'bg-sky-50 border-sky-200 text-sky-800' : 'bg-cyan-950/30 border-cyan-500/20 text-cyan-300'
-                          }`} title={`${source.title} · проверено ${source.checkedOn}`}>
-                            {id}<ExternalLink className="w-3 h-3" />
-                          </a>
-                        );
-                      })}
+            {history.length > 0 ? (
+              <div className="space-y-4">
+                {history.map((turn) => (
+                  <div key={turn.id} className="space-y-2">
+                    <div className="flex justify-end">
+                      <div className={`max-w-[88%] rounded-2xl rounded-br-md px-3.5 py-2.5 text-xs sm:text-sm ${
+                        isLight ? 'bg-violet-100 text-violet-950' : 'bg-violet-950/55 text-violet-100 border border-violet-500/20'
+                      }`}>
+                        {turn.question}
+                      </div>
+                    </div>
+
+                    <div className={`rounded-2xl rounded-tl-md border p-4 sm:p-5 ${
+                      isLight ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#0D1127] border-[#24304C]'
+                    }`}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Sparkles className="w-4 h-4 text-violet-400" />
+                        <div className={`font-bold text-sm ${isLight ? 'text-slate-950' : 'text-[#F4F7FF]'}`}>{turn.answer.title}</div>
+                      </div>
+                      <div className="space-y-2">
+                        {turn.answer.body.map((line, idx) => (
+                          <div key={idx} className={`text-xs sm:text-sm leading-relaxed ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>{line}</div>
+                        ))}
+                      </div>
+                      {turn.answer.sourceIds.length > 0 && (
+                        <div className={`mt-4 pt-3 border-t ${isLight ? 'border-slate-200' : 'border-[#24304C]'}`}>
+                          <div className="text-[10px] uppercase tracking-wider font-bold mb-2 text-slate-500">Официальные источники</div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            {turn.answer.sourceIds.map((id) => {
+                              const source = sourceMap.get(id);
+                              if (!source) return null;
+                              return (
+                                <a key={id} href={source.url} target="_blank" rel="noreferrer noopener" className={`rounded-xl border px-3 py-2 transition-all ${
+                                  isLight ? 'bg-sky-50 border-sky-200 hover:border-sky-400' : 'bg-cyan-950/20 border-cyan-500/20 hover:border-cyan-400/40'
+                                }`}>
+                                  <div className={`flex items-start justify-between gap-2 text-[11px] font-semibold ${isLight ? 'text-sky-900' : 'text-cyan-200'}`}>
+                                    <span>{source.title}</span><ExternalLink className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                                  </div>
+                                  <div className="mt-1 text-[9px] font-mono text-slate-500">Проверено: {source.checkedOn} · {id}</div>
+                                </a>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
+                ))}
               </div>
             ) : (
               <div className={`rounded-2xl border p-5 text-center text-xs leading-relaxed ${
