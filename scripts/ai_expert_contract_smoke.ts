@@ -1,7 +1,9 @@
 import { buildExpertContext } from '../src/aiExpert/buildExpertContext';
 import { evaluatePrograms } from '../src/logic/decisionEngine';
 import { UserQuery } from '../src/types/damu';
-import { composeExpertAnswer, findMentionedProgram } from '../src/aiExpert/composeExpertAnswer';
+import { composeExpertAnswer, findMentionedProgram, detectExpertIntent } from '../src/aiExpert/composeExpertAnswer';
+import { parseProjectCommand } from '../src/aiExpert/parseProjectCommand';
+import { compareExpertContexts } from '../src/aiExpert/compareExpertContexts';
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
@@ -104,3 +106,24 @@ const businessCategoryLines = clarify.body.filter((x) => /категори.*би
 assert(businessCategoryLines.length <= 1, 'Repeated business-category clarifications must be aggregated');
 
 console.log('AI Expert v1.1 regressions: OK');
+
+
+// AI Expert v2 command regressions
+const okedCommand = parseProjectCommand('Проверь другой ОКЭД — 45.20');
+assert(okedCommand.recognized, 'V2 must recognize OKED change command');
+assert(okedCommand.changes.some((c) => c.field === 'oked_code' && c.value === '45.20'), 'V2 must parse OKED 45.20');
+assert(detectExpertIntent('Проверь другой ОКЭД — 45.20') === 'change_project_parameter', 'V2 must classify OKED command as project change');
+
+const amountCommand = parseProjectCommand('Измени сумму финансирования на 300 млн тенге');
+assert(amountCommand.changes.some((c) => c.field === 'amount_kzt' && c.value === 300_000_000), 'V2 must parse 300m KZT amount');
+
+const purposeCommand = parseProjectCommand('Поставь цель финансирования оборотные средства');
+assert(purposeCommand.changes.some((c) => c.field === 'purpose' && c.value === 'Оборотные средства'), 'V2 must parse financing purpose');
+
+const changedSummary = evaluatePrograms({ ...query, oked_code: '45.20' });
+const changedContext = buildExpertContext(changedSummary, '2026-10-07T00:01:00.000Z');
+const contextDiff = compareExpertContexts(context, changedContext);
+assert(contextDiff.lines.some((line) => line.includes('ОКЭД: 25.11 → 45.20')), 'V2 context diff must report OKED change');
+assert(contextDiff.lines.some((line) => line.includes('Итог после пересчёта')), 'V2 context diff must report recalculation totals');
+
+console.log('AI Expert v2 command regressions: OK');
