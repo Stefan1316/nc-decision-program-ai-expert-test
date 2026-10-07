@@ -127,3 +127,15 @@ assert(contextDiff.lines.some((line) => line.includes('ОКЭД: 25.11 → 45.20
 assert(contextDiff.lines.some((line) => line.includes('Итог после пересчёта')), 'V2 context diff must report recalculation totals');
 
 console.log('AI Expert v2 command regressions: OK');
+
+
+// V2 parser edge cases from UI testing
+const purposeOnlyCommand = parseProjectCommand('поставь цель финансирования оборотные средства');
+assert(purposeOnlyCommand.changes.some((c) => c.field === 'purpose' && c.value === 'Оборотные средства'), 'Purpose command must parse turnover financing');
+assert(!purposeOnlyCommand.unresolved.some((x) => /сумм/i.test(x)), 'Purpose-only command must not ask for financing amount');
+
+const groupedAmountCommand = parseProjectCommand('сумма финансирования 300 000 000 тенге');
+assert(groupedAmountCommand.changes.some((c) => c.field === 'amount_kzt' && c.value === 300_000_000), 'Grouped amount 300 000 000 KZT must parse');
+assert(detectExpertIntent('сумма финансирования 300 000 000 тенге') === 'change_project_parameter', 'Direct amount declaration must be treated as project change');
+
+console.log('AI Expert v2 parser edge cases: OK');
