@@ -11,6 +11,7 @@ import { AcceptanceTestsModal } from './components/AcceptanceTestsModal';
 import { ProductNav } from './components/ProductNav';
 import { AIExpertPanel } from './components/AIExpertPanel';
 import { buildExpertContext } from './aiExpert/buildExpertContext';
+import { ExpertParameterChange } from './aiExpert/types';
 import { ThemeMode, Language, translations } from './i18n/translations';
 import { 
   FileText, 
@@ -100,6 +101,29 @@ export default function App() {
     window.setTimeout(() => {
       analysisResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 50);
+  };
+
+  const handleAIExpertApplyChanges = (changes: ExpertParameterChange[]) => {
+    const patch: Partial<UserQuery> = {};
+    for (const change of changes) {
+      (patch as Record<string, unknown>)[change.field] = change.value;
+    }
+
+    const nextQuery = { ...query, ...patch } as UserQuery;
+
+    // If a region/city is selected directly, clear stale district fields unless the command
+    // explicitly supplied a district.
+    const changedFields = new Set(changes.map((c) => c.field));
+    if ((changedFields.has('region_name') || changedFields.has('location_name')) && !changedFields.has('district_name')) {
+      nextQuery.district_id = '';
+      nextQuery.district_name = '';
+    }
+
+    setQuery(nextQuery);
+    setAnalyzedQuery(nextQuery);
+
+    const nextSummary = evaluatePrograms(nextQuery);
+    return buildExpertContext(nextSummary);
   };
 
   const handleOpenReport = () => {
@@ -572,6 +596,7 @@ export default function App() {
         onClose={() => setIsAIExpertOpen(false)}
         context={expertContext}
         theme={theme}
+        onApplyChanges={handleAIExpertApplyChanges}
       />
 
       {/* Модальное окно формирования экспертного заключения */}
