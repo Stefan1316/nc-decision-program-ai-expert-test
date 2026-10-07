@@ -97,8 +97,12 @@ export type ExpertIntent =
 export interface ExpertParameterChange {
   field:
     | 'oked_code'
+    | 'region_id'
     | 'region_name'
+    | 'district_id'
     | 'district_name'
+    | 'location_name'
+    | 'location_level'
     | 'amount_kzt'
     | 'purpose'
     | 'entity_type'
