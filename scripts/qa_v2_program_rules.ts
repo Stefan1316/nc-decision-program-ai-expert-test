@@ -121,7 +121,7 @@ for (const city of ['Алматы', 'Астана', 'Шымкент']) {
 
 // 14.1 is an official Orleu priority and national Isker group.
 {
-  const summary = evaluatePrograms(baseQuery({ oked_code: '14.1' }));
+  const summary = evaluatePrograms(baseQuery({ oked_code: '14.1', amount_kzt: 150_000_000 }));
   assert(program(summary, ORLEU).status === 'exact_match', '14.1 must match Orleu');
   assert(program(summary, 'damu.subsidy.isker_aymak').status === 'exact_match', '14.1 must match national Isker Aymak list');
 }
