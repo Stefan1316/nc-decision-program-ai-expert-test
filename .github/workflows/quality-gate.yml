@@ -8,6 +8,7 @@ on:
       - 'src/**'
       - 'scripts/random_funding_smoke.ts'
       - 'scripts/ai_expert_contract_smoke.ts'
+      - 'scripts/qa_v2_program_rules.ts'
       - 'package.json'
       - '.github/workflows/quality-gate.yml'
 
@@ -29,3 +30,5 @@ jobs:
         run: npm run test:smoke
       - name: AI Expert contract smoke tests
         run: npm run test:ai-expert
+      - name: QA v2 program-rules matrix
+        run: npm run test:qa-v2
