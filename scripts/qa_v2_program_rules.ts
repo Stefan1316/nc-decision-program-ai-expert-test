@@ -140,7 +140,7 @@ for (const oked of ['62,0', '55,30']) {
 
 // verification_needed must win over generic missing_inputs.
 {
-  const result = program(evaluatePrograms(baseQuery({ oked_code: '14.1' })), MFG);
+  const result = program(evaluatePrograms(baseQuery({ oked_code: '14.1', purpose: undefined })), MFG);
   assert(result.status === 'needs_verification', `Low-quality manufacturing tranche must remain needs_verification; got ${result.status}`);
 }
 
