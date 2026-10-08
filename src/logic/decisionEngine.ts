@@ -106,16 +106,68 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
     // 3. OKED evaluation
     // Special program: Inner Trade subsidy (Субсидирование внутренней торговли)
     if (prog.id === 'damu.subsidy.inner_trade' || prog.id === 'damu.subsidy.retail_trade') {
-      const isTradeOked = cleanCode.startsWith('46') || cleanCode.startsWith('47') || cleanCode.startsWith('68.20');
+      const isRetailRealEstateOked = ['68.20.3', '68.20.4', '68.20.5'].some(
+        (code) => cleanCode === code || cleanCode.startsWith(code + '.')
+      );
+      const isRegionalCityTradeOked =
+        cleanCode === '46.90.3' || cleanCode.startsWith('46.90.3.') ||
+        cleanCode === '47.11' || cleanCode.startsWith('47.11.') ||
+        cleanCode === '47.19' || cleanCode.startsWith('47.19.') ||
+        cleanCode === '47.91.0' || cleanCode.startsWith('47.91.0.') ||
+        isRetailRealEstateOked;
+      const isSmallTownTradeOked =
+        cleanCode.startsWith('46') || cleanCode.startsWith('47') || isRetailRealEstateOked;
+
       if (isRepCity) {
         okedMatchLevel = 'excluded';
-        restrictions.push(`По официальному регламенту АО «ФРП «Даму» субсидирование ставки вознаграждения по кредитам в сфере внутренней торговли (ОКЭД 46, 47, 68.20) в городах республиканского значения (Астана, Алматы, Шымкент) НЕ ПРЕДОСТАВЛЯЕТСЯ. Поддержка внутренней торговли действует исключительно в регионах, областных центрах, моно- и малых городах и сельских населенных пунктах.`);
-      } else if (isTradeOked) {
-        okedMatchLevel = 'exact';
-        matched_reasons.push(`ОКЭД ${cleanCode} входит в перечень внутренней торговли (разделы 46, 47) и сопутствующей аренды торговой недвижимости (68.20.3-68.20.5).`);
+        restrictions.push('Поддержка субъектов внутренней торговли не предоставляется по проектам, реализуемым в столице и городах республиканского значения (Астана, Алматы, Шымкент).');
       } else {
-        okedMatchLevel = 'excluded';
-        restrictions.push(`Программа доступна исключительно для субъектов торговли (ОКЭД разделов 46, 47, а также 68.20.3-68.20.5).`);
+        const settlementConfirmed = query.settlement_type_confirmed === true;
+        const settlementType = query.settlement_type || '';
+        const isRegionalCity = settlementConfirmed && settlementType === 'regional_city';
+        const isSmallTownOrRural = settlementConfirmed && (settlementType === 'monotown' || settlementType === 'village');
+
+        if (!settlementConfirmed) {
+          okedMatchLevel = 'verification_needed';
+          missing_inputs.push('Подтвердить тип территории: город областного значения либо моно-/малый город/сельский населённый пункт');
+          clarificationSet.add('location');
+        } else if (isRegionalCity && !isRegionalCityTradeOked) {
+          okedMatchLevel = 'excluded';
+          restrictions.push(`ОКЭД ${cleanCode} не входит в перечень внутренней торговли для городов областного значения.`);
+        } else if (isSmallTownOrRural && !isSmallTownTradeOked) {
+          okedMatchLevel = 'excluded';
+          restrictions.push(`ОКЭД ${cleanCode} не входит в перечень внутренней торговли для моно-/малых городов и сельских населённых пунктов.`);
+        } else if (!isRegionalCity && !isSmallTownOrRural) {
+          okedMatchLevel = 'verification_needed';
+          missing_inputs.push('Выбранный тип территории требует проверки по условиям поддержки внутренней торговли');
+          clarificationSet.add('location');
+        } else {
+          okedMatchLevel = 'exact';
+          matched_reasons.push(`ОКЭД ${cleanCode} входит в перечень внутренней торговли для выбранного типа территории.`);
+
+          const territoryLimit = isRegionalCity ? 3_000_000_000 : 1_500_000_000;
+          if (query.amount_kzt && query.amount_kzt > territoryLimit) {
+            restrictions.push(`Запрашиваемая сумма превышает территориальный лимит программы: ${isRegionalCity ? '3 млрд тг для города областного значения' : '1,5 млрд тг для моно-/малого города или сельского населённого пункта'}.`);
+          }
+
+          if ((cleanCode === '68.20.4' || cleanCode.startsWith('68.20.4.') || cleanCode === '68.20.5' || cleanCode.startsWith('68.20.5.'))) {
+            if (query.is_shopping_entertainment_center === true) {
+              restrictions.push('Торгово-развлекательные центры прямо исключены из поддержки субъектов внутренней торговли.');
+            } else if (query.is_shopping_entertainment_center !== false) {
+              missing_inputs.push('Подтвердить, что объект не является торгово-развлекательным центром (ТРЦ)');
+              clarificationSet.add('trade_object');
+            }
+          }
+
+          if (query.purpose === 'Оборотные средства') {
+            if (query.working_capital_kz_manufacturer_registry === false) {
+              restrictions.push('Для пополнения оборотных средств закупка должна осуществляться у казахстанских производителей, включённых в Реестр казахстанских товаропроизводителей.');
+            } else if (query.working_capital_kz_manufacturer_registry !== true) {
+              missing_inputs.push('Подтвердить закупку товаров, сырья и материалов у казахстанских производителей из соответствующего Реестра');
+              clarificationSet.add('working_capital_source');
+            }
+          }
+        }
       }
     } 
     
@@ -542,21 +594,31 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
     let status: ProgramStatus = 'possible_match';
     let status_label_ru = 'Возможное соответствие';
 
-    if (restrictions.length > 0 && restrictions.some(r => r.includes('исключен') || r.includes('запрещает') || r.includes('превышает') || r.includes('исключает') || r.includes('не подтверждена условиями программы') || r.includes('предпочтительный инструмент'))) {
+    const hasFatalRestriction = restrictions.length > 0 && restrictions.some(r =>
+      r.includes('исключен') ||
+      r.includes('исключены') ||
+      r.includes('не предоставляется') ||
+      r.includes('запрещает') ||
+      r.includes('превышает') ||
+      r.includes('исключает') ||
+      r.includes('не входит в перечень') ||
+      r.includes('не подтверждена условиями программы') ||
+      r.includes('предпочтительный инструмент') ||
+      r.includes('закупка должна осуществляться')
+    );
+
+    if (hasFatalRestriction || okedMatchLevel === 'excluded') {
       status = 'not_applicable';
       status_label_ru = 'Не применимо';
-    } else if (okedMatchLevel === 'exact' && restrictions.length === 0) {
-      status = 'exact_match';
-      status_label_ru = 'Точное соответствие';
-    } else if (okedMatchLevel === 'excluded') {
-      status = 'not_applicable';
-      status_label_ru = 'Не применимо';
-    } else if (missing_inputs.length > 0) {
-      status = 'needs_clarification';
-      status_label_ru = 'Требуется уточнение';
     } else if (okedMatchLevel === 'verification_needed') {
       status = 'needs_verification';
       status_label_ru = 'Требуется верификация';
+    } else if (missing_inputs.length > 0) {
+      status = 'needs_clarification';
+      status_label_ru = 'Требуется уточнение';
+    } else if (okedMatchLevel === 'exact' && restrictions.length === 0) {
+      status = 'exact_match';
+      status_label_ru = 'Точное соответствие';
     } else {
       status = 'possible_match';
       status_label_ru = 'Возможное соответствие';
