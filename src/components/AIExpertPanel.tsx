@@ -167,7 +167,7 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
             <div className="min-w-0">
               <div id="nc-ai-expert-title" className={`font-extrabold text-sm sm:text-base ${isLight ? 'text-slate-950' : 'text-[#F4F7FF]'}`}>NC Decision AI Expert</div>
               <div className={`text-[11px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
-                Объясняет и меняет параметры только через decision engine
+                Объясняет заключение и предлагает изменения. Любые правки требуют подтверждения.
               </div>
             </div>
           </div>
@@ -189,7 +189,7 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2">
+            <div aria-label="Примеры запросов AI Expert" className="flex flex-wrap gap-2 nc-ux-expert-prompts">
               {quickQuestions.map((item) => (
                 <button key={item} type="button" onClick={() => ask(item)} className={`px-3 py-2 rounded-xl border text-xs font-semibold transition-all ${
                   isLight ? 'bg-slate-50 border-slate-200 text-slate-700 hover:border-violet-300' : 'bg-[#0D1127] border-[#24304C] text-slate-300 hover:border-violet-500/50'

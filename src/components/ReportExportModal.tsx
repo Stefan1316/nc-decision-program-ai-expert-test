@@ -172,6 +172,7 @@ ${excludedProgramRows.map((p, i) => `
           </div>
 
           <button
+            aria-label="Закрыть экспертное заключение"
             onClick={onClose}
             className={`p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 touch-manipulation active:scale-95 ${
               isLight 
@@ -186,6 +187,13 @@ ${excludedProgramRows.map((p, i) => `
         {/* Тело отчёта */}
         <div className="p-3.5 sm:p-6 overflow-y-auto space-y-4 sm:space-y-6">
           
+          <section data-testid="ux-report-summary" aria-label="Краткие результаты подбора" className="nc-ux-report-summary rounded-xl border border-cyan-500/25 p-4">
+            <h3 className="text-base font-bold">Результаты предварительного подбора</h3>
+            <p className="text-sm mt-1 text-slate-400">ОКЭД {cleanCode} · {query.location_name}. Диагностика не является решением кредитора.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">
+              {[['Точных',summary.exact_matches.length],['Возможных',summary.possible_matches.length],['Уточнить',summary.needs_clarification.length+summary.needs_verification.length],['Исключено',summary.not_applicable.length]].map(([label,n])=><div key={label} className="rounded-lg border border-slate-600/30 p-2.5"><div className="text-xs text-slate-400">{label}</div><div className="text-xl font-bold">{n}</div></div>)}
+            </div>
+          </section>
           {/* Сводка параметров */}
           <div className={`p-3.5 sm:p-4 rounded-xl border grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs ${
             isLight 

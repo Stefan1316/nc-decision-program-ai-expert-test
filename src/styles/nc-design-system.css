@@ -175,3 +175,6 @@
     background-image: none;
   }
 }
+
+/* Stage 3 UX presentation */
+.nc-ux-step-complete{background:rgba(0,229,255,.09);border-color:rgba(0,229,255,.35);color:#c4f5fa}.nc-ux-step-pending{background:rgba(148,163,184,.07);border-color:rgba(148,163,184,.2);color:#b3c0d5}[data-theme='light'] .nc-ux-step-complete{background:#ebfafc;color:#075985}[data-theme='light'] .nc-ux-step-pending{background:#f8fafc;color:#475569}.nc-ux-report-summary{background:rgba(0,229,255,.045)}[data-theme='light'] .nc-ux-report-summary{background:#f1faff}.nc-ux-expert-prompts button{font-size:.875rem;line-height:1.45}.nc-ux-workspace p{line-height:1.55}

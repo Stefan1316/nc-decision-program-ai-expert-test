@@ -372,6 +372,12 @@ export default function App() {
           </p>
         </div>
 
+        <section data-testid="ux-steps" aria-label="Этапы анализа проекта" className="nc-ux-steps grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {['1 · ОКЭД','2 · Территория','3 · Анализ','4 · Заключение'].map((label,index)=>{
+            const ready=index===0?Boolean(query.oked_code):index===1?Boolean(query.region_name&&(query.location_level!=='region'||query.district_name)):analysisState==='done';
+            return <div key={label} className={`rounded-xl border px-3 py-2.5 text-sm font-semibold ${ready?'nc-ux-step-complete':'nc-ux-step-pending'}`}>{label}</div>;
+          })}
+        </section>
         {/* Единый рабочий стол: карта + параметры + readiness */}
         <div className="md:hidden">
           <button
@@ -391,8 +397,8 @@ export default function App() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-start">
-          <div className={`order-2 md:order-1 xl:col-span-7 min-w-0 ${isMobileMapOpen ? 'block' : 'hidden md:block'}`}>
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 lg:gap-5 items-start nc-ux-workspace">
+          <div className={`order-2 md:order-2 xl:order-1 xl:col-span-7 min-w-0 ${isMobileMapOpen ? 'block' : 'hidden md:block'}`}>
             <MioPrioritiesMap
               compactMode
               currentLocationName={query.location_name}
@@ -415,7 +421,7 @@ export default function App() {
             />
           </div>
 
-          <div className="order-1 md:order-2 xl:col-span-5 min-w-0 xl:sticky xl:top-20 space-y-4">
+          <div className="order-1 md:order-1 xl:order-2 xl:col-span-5 min-w-0 xl:sticky xl:top-20 space-y-4">
             <QueryInputPanel
               query={query}
               onChange={handleQueryChange}

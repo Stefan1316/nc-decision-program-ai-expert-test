@@ -127,7 +127,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
         </h3>
 
         {/* Назначение / Цель */}
-        <p className={`text-xs mt-2 leading-relaxed ${
+        <p className={`text-sm mt-2 leading-relaxed ${
           isLight ? 'text-neutral-600' : 'text-slate-400'
         }`}>
           <strong className={isLight ? 'text-neutral-900 font-semibold' : 'text-slate-200 font-medium'}>

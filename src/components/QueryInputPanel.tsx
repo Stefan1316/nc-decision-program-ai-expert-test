@@ -58,6 +58,8 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
     (query.location_level !== 'region' || query.district_name)
   );
 
+  const missingBaseInputs = [!query.oked_code?'код ОКЭД':'',!query.region_name?'область или город':'',query.region_name && query.location_level==='region'&&!query.district_name?'район или город области':''].filter(Boolean);
+
   // Закрытие при клике вне выпадающего списка
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -699,7 +701,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
           <div className="mt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className={`text-[11px] ${isLight ? 'text-neutral-500' : 'text-slate-400'}`}>
               {!baseReady
-                ? 'Сначала укажите ОКЭД и территорию проекта.'
+                ? `Для анализа заполните: ${missingBaseInputs.join(', ')}.`
                 : analysisState === 'done'
                   ? 'Анализ зафиксирован. Если измените параметры проекта, потребуется повторный анализ.'
                   : analysisState === 'stale'
@@ -711,6 +713,7 @@ export const QueryInputPanel: React.FC<QueryInputPanelProps> = ({
             <button
               type="button"
               disabled={!baseReady || analysisState === 'done'}
+              title={!baseReady ? `Необходимо заполнить: ${missingBaseInputs.join(', ')}` : undefined}
               onClick={onAnalyze}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                 !baseReady || analysisState === 'done'

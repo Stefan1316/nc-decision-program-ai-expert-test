@@ -62,8 +62,9 @@ export const ProductNav: React.FC<ProductNavProps> = ({
             <NcConsultingLogo className="h-9" theme={theme} />
           </div>
 
-          <nav className="p-2 space-y-0.5 overflow-y-auto">
-            {desktopItems.map(({ label, icon: Icon, active, ai, comingSoon }) => (
+          <nav aria-label="Разделы NC Decision" className="p-2 space-y-0.5 overflow-y-auto">
+            <div className="px-2.5 py-2 text-xs uppercase tracking-wider text-slate-400 font-semibold">Доступные инструменты</div>
+            {desktopItems.filter(item=>!item.comingSoon).map(({ label, icon: Icon, active, ai, comingSoon }) => (
               <button
                 key={label}
                 type="button"
@@ -90,6 +91,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
                 {ai && <span className="ml-auto px-1.5 py-0.5 text-[8px] rounded bg-violet-500/15 text-violet-300 border border-violet-500/30">AI</span>}
               </button>
             ))}
+            <details className="mt-3"><summary className="cursor-pointer px-2.5 py-2 text-xs font-semibold text-slate-400">В разработке · {desktopItems.filter(item=>item.comingSoon).length} разделов</summary><div className="px-2.5 py-1 text-sm text-slate-400">{desktopItems.filter(item=>item.comingSoon).map(item=><div key={item.label} className="py-1.5">{item.label} · Скоро</div>)}</div></details>
           </nav>
         </div>
 
@@ -157,8 +159,6 @@ export const ProductNav: React.FC<ProductNavProps> = ({
         <div className="grid grid-cols-5 gap-1 max-w-md mx-auto">
           {[
             ['Анализ', SearchCheck, true],
-            ['Проекты', FolderKanban, false],
-            ['Программы', Landmark, false],
             ['AI Expert', Bot, false],
             ['Ещё', MoreHorizontal, false]
           ].map(([label, Icon, active]: any) => (
@@ -248,6 +248,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
                     {ai && <span className="text-[9px] px-1.5 py-0.5 rounded border border-violet-500/30 text-violet-300">AI</span>}
                   </button>
                 ))}
+                <details className="pt-3"><summary className="cursor-pointer text-sm text-slate-400 px-3 py-2">Будущие разделы</summary><div className="px-3 py-2 text-sm text-slate-400">{desktopItems.filter(item=>item.comingSoon).map(item=><div key={item.label} className="py-1">{item.label} · Скоро</div>)}</div></details>
               </nav>
             </div>
 
