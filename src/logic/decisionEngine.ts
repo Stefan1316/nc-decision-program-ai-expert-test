@@ -534,7 +534,7 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       const requestedPurpose = query.purpose.toLowerCase();
       const purposeMatches =
         (requestedPurpose.includes('инвест') && purposeText.includes('инвест')) ||
-        (requestedPurpose.includes('оборот') && (purposeText.includes('оборот') || purposeText.includes('пополн'))) ||
+        (requestedPurpose.includes('оборот') && (purposeText.includes('оборот') || purposeText.includes('пополн') || /\bпос\b/.test(purposeText))) ||
         (requestedPurpose.includes('рефин') && purposeText.includes('рефин')) ||
         (requestedPurpose.includes('лизинг') && (purposeText.includes('лизинг') || (prog.instrument_type || '').toLowerCase().includes('лизинг')));
 
