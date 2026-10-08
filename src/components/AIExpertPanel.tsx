@@ -42,6 +42,8 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
   const [pendingCommand, setPendingCommand] = useState<ParsedProjectCommand | null>(null);
   const [commandQuestion, setCommandQuestion] = useState('');
   const turnId = React.useRef(1);
+  const dialogRef = React.useRef<HTMLDivElement>(null);
+  const previousFocusRef = React.useRef<HTMLElement | null>(null);
 
   const sourceMap = useMemo(() => {
     const map = new Map<string, { title: string; url: string; checkedOn: string }>();
@@ -61,6 +63,19 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
     setCommandQuestion('');
     turnId.current = 1;
   }, [isOpen]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const frame = requestAnimationFrame(() => dialogRef.current?.focus());
+    return () => { cancelAnimationFrame(frame); previousFocusRef.current?.focus(); };
+  }, [isOpen]);
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const onEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.preventDefault(); onClose(); } };
+    document.addEventListener('keydown', onEscape, true);
+    return () => document.removeEventListener('keydown', onEscape, true);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -137,9 +152,9 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 sm:p-6">
+    <div className="fixed inset-0 z-[90] flex items-center justify-center p-3 sm:p-6" onKeyDown={(e) => { if (e.key === 'Tab' && dialogRef.current) { const list = [...dialogRef.current.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])')].filter(el => el.getClientRects().length); if (!list.length) return; const first = list[0]; const last = list[list.length - 1]; if (e.shiftKey && (document.activeElement === first || document.activeElement === dialogRef.current)) { e.preventDefault(); last.focus(); } else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); } } }}>
       <button type="button" aria-label="Закрыть AI Expert" onClick={onClose} className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
-      <div className={`relative w-full max-w-4xl max-h-[88vh] rounded-2xl border shadow-2xl overflow-hidden flex flex-col ${
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="nc-ai-expert-title" tabIndex={-1} className={`relative w-full max-w-4xl max-h-[88vh] rounded-2xl border shadow-2xl overflow-hidden flex flex-col ${
         isLight ? 'bg-white border-slate-200' : 'bg-[#080A1A] border-[#24304C]'
       }`}>
         <div className={`px-4 sm:px-5 py-4 border-b flex items-center justify-between gap-3 ${
@@ -150,13 +165,13 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
               <Bot className="w-5 h-5 text-violet-400" />
             </div>
             <div className="min-w-0">
-              <div className={`font-extrabold text-sm sm:text-base ${isLight ? 'text-slate-950' : 'text-[#F4F7FF]'}`}>NC Decision AI Expert</div>
+              <div id="nc-ai-expert-title" className={`font-extrabold text-sm sm:text-base ${isLight ? 'text-slate-950' : 'text-[#F4F7FF]'}`}>NC Decision AI Expert</div>
               <div className={`text-[11px] mt-0.5 ${isLight ? 'text-slate-500' : 'text-slate-400'}`}>
                 Объясняет и меняет параметры только через decision engine
               </div>
             </div>
           </div>
-          <button type="button" onClick={onClose} className={`w-9 h-9 rounded-lg border flex items-center justify-center ${
+          <button type="button" aria-label="Закрыть AI Expert" onClick={onClose} className={`w-9 h-9 rounded-lg border flex items-center justify-center ${
             isLight ? 'border-slate-200 text-slate-600' : 'border-[#24304C] text-slate-300'
           }`}><X className="w-4 h-4" /></button>
         </div>
@@ -281,12 +296,12 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               disabled={!context}
-              placeholder="Например: проверь другой ОКЭД — 45.20"
+              placeholder="Например: поменяй ОКЭД на 45.20"
               className={`flex-1 min-w-0 px-3 py-2.5 rounded-xl border text-sm outline-none ${
                 isLight ? 'bg-white border-slate-300 text-slate-900 focus:border-violet-400' : 'bg-[#060814] border-[#24304C] text-[#F4F7FF] focus:border-violet-500'
               }`}
             />
-            <button type="submit" disabled={!context || !question.trim()} className="w-11 h-11 rounded-xl bg-violet-600 text-white flex items-center justify-center disabled:opacity-40">
+            <button type="submit" aria-label="Отправить вопрос AI Expert" disabled={!context || !question.trim()} className="w-11 h-11 rounded-xl bg-violet-600 text-white flex items-center justify-center disabled:opacity-40">
               <Send className="w-4 h-4" />
             </button>
           </form>

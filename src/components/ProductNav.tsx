@@ -165,7 +165,7 @@ export const ProductNav: React.FC<ProductNavProps> = ({
             <button
               key={label}
               type="button"
-              aria-disabled={!active}
+              aria-disabled={label === 'Проекты' || label === 'Программы' || (label === 'AI Expert' && !aiExpertAvailable)}
               onClick={() => { if (label === 'Ещё') onDrawerOpenChange(true); if (label === 'AI Expert' && aiExpertAvailable) onOpenAIExpert?.(); }}
               className={`min-h-[48px] rounded-lg flex flex-col items-center justify-center gap-0.5 text-[10px] font-semibold ${
               active

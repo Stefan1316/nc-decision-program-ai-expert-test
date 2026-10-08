@@ -517,6 +517,10 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                 return (
                   <g 
                     key={region.id} 
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Выбрать регион: ${region.name}`}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRegionClick(region.id); } }}
                     className="cursor-pointer transition-all duration-200"
                     style={{ opacity }}
                     onClick={() => handleRegionClick(region.id)}
@@ -569,6 +573,10 @@ export const MioPrioritiesMap: React.FC<MioPrioritiesMapProps> = ({
                 return (
                   <g 
                     key={city.id} 
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Выбрать город: ${city.name}`}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleRegionClick(city.id); } }}
                     className="cursor-pointer"
                     style={{ opacity: isInActiveZone ? 1 : 0.4 }}
                     onClick={() => handleRegionClick(city.id)}
