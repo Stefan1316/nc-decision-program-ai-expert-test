@@ -25,6 +25,8 @@ export const ClarificationDrawer: React.FC<ClarificationDrawerProps> = ({
     query.amount_kzt,
     query.operating_years !== undefined && query.operating_years !== null,
     query.social_enterprise_registry !== undefined && query.social_enterprise_registry !== null,
+    query.is_shopping_entertainment_center !== undefined && query.is_shopping_entertainment_center !== null,
+    query.working_capital_kz_manufacturer_registry !== undefined && query.working_capital_kz_manufacturer_registry !== null,
     query.tax_arrears !== undefined && query.tax_arrears !== null,
     query.overdue_debt_days !== undefined && query.overdue_debt_days !== null
   ].filter(Boolean).length;
@@ -174,7 +176,45 @@ export const ClarificationDrawer: React.FC<ClarificationDrawerProps> = ({
             </select>
           </div>
 
-          {/* 6. Налоговая задолженность */}
+          {/* 6. Торгово-развлекательный центр — важно для ОКЭД 68.20.4/68.20.5 */}
+          <div className="space-y-1.5">
+            <label className="text-[#94A3B8] font-medium">
+              Объект является ТРЦ:
+            </label>
+            <select
+              value={query.is_shopping_entertainment_center === true ? 'true' : query.is_shopping_entertainment_center === false ? 'false' : ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                onChange({ is_shopping_entertainment_center: v === 'true' ? true : v === 'false' ? false : null });
+              }}
+              className="w-full bg-[#17113D] border border-[#2A2360] rounded-lg px-2.5 py-2 text-[#F4F7FF] focus:border-[#8B5CFF] focus:outline-none"
+            >
+              <option value="">Не знаю / нужно проверить</option>
+              <option value="false">Нет, это не ТРЦ</option>
+              <option value="true">Да, это ТРЦ</option>
+            </select>
+          </div>
+
+          {/* 7. ПОС для внутренней торговли */}
+          <div className="space-y-1.5">
+            <label className="text-[#94A3B8] font-medium">
+              ПОС: закупка у производителей из Реестра:
+            </label>
+            <select
+              value={query.working_capital_kz_manufacturer_registry === true ? 'true' : query.working_capital_kz_manufacturer_registry === false ? 'false' : ''}
+              onChange={(e) => {
+                const v = e.target.value;
+                onChange({ working_capital_kz_manufacturer_registry: v === 'true' ? true : v === 'false' ? false : null });
+              }}
+              className="w-full bg-[#17113D] border border-[#2A2360] rounded-lg px-2.5 py-2 text-[#F4F7FF] focus:border-[#8B5CFF] focus:outline-none"
+            >
+              <option value="">Не знаю / нужно проверить</option>
+              <option value="true">Да</option>
+              <option value="false">Нет</option>
+            </select>
+          </div>
+
+          {/* 8. Налоговая задолженность */}
           <div className="space-y-1.5">
             <label className="text-[#94A3B8] font-medium">
               Налоговая задолженность:
