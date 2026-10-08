@@ -178,3 +178,13 @@
 
 /* Stage 3 UX presentation */
 .nc-ux-step-complete{background:rgba(0,229,255,.09);border-color:rgba(0,229,255,.35);color:#c4f5fa}.nc-ux-step-pending{background:rgba(148,163,184,.07);border-color:rgba(148,163,184,.2);color:#b3c0d5}[data-theme='light'] .nc-ux-step-complete{background:#ebfafc;color:#075985}[data-theme='light'] .nc-ux-step-pending{background:#f8fafc;color:#475569}.nc-ux-report-summary{background:rgba(0,229,255,.045)}[data-theme='light'] .nc-ux-report-summary{background:#f1faff}.nc-ux-expert-prompts button{font-size:.875rem;line-height:1.45}.nc-ux-workspace p{line-height:1.55}
+
+/* P3 polished status semantics and restrained glow; preserve NC brand neon as CTA only */
+:root{--nc-status-success:#34D399;--nc-status-possible:#FBBF24;--nc-status-clarify:#67E8F9;--nc-status-unverified:#CBD5E1;--nc-status-excluded:#FDA4AF;--nc-secondary-readable:#B8C7DB}
+[data-theme='dark'] .nc-surface-card{box-shadow:0 6px 16px rgba(0,0,0,.12)!important}
+[data-theme='dark'] .nc-surface-section{box-shadow:0 6px 20px rgba(0,0,0,.13)!important}
+[data-theme='dark'] .nc-surface-card .text-slate-500{color:var(--nc-secondary-readable)}
+[data-theme='dark'] .nc-surface-card .text-slate-400{color:#B5C2D5}
+[data-theme='dark'] .nc-surface-section .text-slate-400{color:#B5C2D5}
+.nc-surface-card .text-glow-cyan,.nc-surface-card .text-glow-emerald{text-shadow:none!important}
+@media(prefers-reduced-motion:reduce){.nc-app-shell .transition-all,.nc-app-shell .transition-colors,.nc-app-shell .animate-in{animation-duration:.01ms!important;transition-duration:.01ms!important}}

@@ -25,31 +25,31 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
     exact_match: {
       cardBorder: isLight 
         ? 'border-emerald-300/80 hover:border-emerald-500 hover:shadow-emerald-500/10' 
-        : 'border-emerald-500/30 hover:border-emerald-400/80 hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.3)]',
+        : 'border-emerald-500/30 hover:border-emerald-400/80 ',
       badge: isLight 
         ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-xs' 
-        : 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40 shadow-[0_0_12px_-2px_rgba(16,185,129,0.35)]',
-      dot: isLight ? 'bg-emerald-600' : 'bg-emerald-400 shadow-[0_0_8px_#34d399]',
+        : 'bg-emerald-950/70 text-emerald-300 border-emerald-500/40 ',
+      dot: isLight ? 'bg-emerald-600' : 'bg-emerald-400 ',
       icon: <CheckCircle2 className={`w-3.5 h-3.5 ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`} />
     },
     possible_match: {
       cardBorder: isLight 
         ? 'border-amber-300/80 hover:border-amber-500 hover:shadow-amber-500/10' 
-        : 'border-purple-500/30 hover:border-purple-400/80 hover:shadow-[0_0_24px_-4px_rgba(168,85,247,0.3)]',
+        : 'border-amber-500/30 hover:border-amber-400/60 ',
       badge: isLight 
         ? 'bg-amber-50 text-amber-900 border-amber-300 shadow-xs' 
-        : 'bg-purple-950/70 text-purple-300 border-purple-500/40 shadow-[0_0_12px_-2px_rgba(168,85,247,0.35)]',
-      dot: isLight ? 'bg-amber-600' : 'bg-purple-400 shadow-[0_0_8px_#c084fc]',
+        : 'bg-amber-950/40 text-amber-200 border-amber-500/40 ',
+      dot: isLight ? 'bg-amber-600' : 'bg-purple-400 ',
       icon: <HelpCircle className={`w-3.5 h-3.5 ${isLight ? 'text-amber-700' : 'text-purple-400'}`} />
     },
     needs_clarification: {
       cardBorder: isLight 
         ? 'border-sky-300/80 hover:border-sky-500 hover:shadow-sky-500/10' 
-        : 'border-cyan-500/30 hover:border-cyan-400/80 hover:shadow-[0_0_24px_-4px_rgba(0,229,255,0.3)]',
+        : 'border-cyan-500/30 hover:border-cyan-400/80 ',
       badge: isLight 
         ? 'bg-sky-50 text-sky-900 border-sky-300 shadow-xs' 
-        : 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40 shadow-[0_0_12px_-2px_rgba(0,229,255,0.35)]',
-      dot: isLight ? 'bg-sky-600' : 'bg-cyan-400 shadow-[0_0_8px_#22d3ee]',
+        : 'bg-cyan-950/70 text-cyan-300 border-cyan-500/40 ',
+      dot: isLight ? 'bg-sky-600' : 'bg-cyan-400 ',
       icon: <HelpCircle className={`w-3.5 h-3.5 ${isLight ? 'text-sky-700' : 'text-cyan-400'}`} />
     },
     needs_verification: {
@@ -86,7 +86,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
         <div className="absolute top-0 inset-x-8 h-px bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-60" />
       )}
       {!isLight && status === 'possible_match' && (
-        <div className="absolute top-0 inset-x-8 h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent opacity-60" />
+        <div className="absolute top-0 inset-x-8 h-px bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-60" />
       )}
       {!isLight && (status === 'needs_clarification' || status === 'needs_verification') && (
         <div className="absolute top-0 inset-x-8 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-40" />
@@ -151,7 +151,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
               {isKk ? 'Мөлшерлеме:' : 'Ставка заёмщика:'}
             </span>
             <span className={`font-mono text-sm font-bold block ${
-              isLight ? 'text-neutral-950' : 'text-[#00E5FF] text-glow-cyan'
+              isLight ? 'text-neutral-950' : 'text-[#00E5FF] '
             }`}>
               {program.borrower_rate_text || 'По банку'}
             </span>
@@ -181,7 +181,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
               {isKk ? 'Лимит сомасы:' : 'Макс. лимит:'}
             </span>
             <span className={`font-mono text-xs font-bold block truncate ${
-              isLight ? 'text-emerald-700' : 'text-emerald-300 text-glow-emerald'
+              isLight ? 'text-emerald-700' : 'text-emerald-300 '
             }`} title={program.amount_max_text || 'По регламенту'}>
               {program.amount_max_text || 'По регламенту'}
             </span>
@@ -253,11 +253,11 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
           {status !== 'not_applicable' && missing_inputs.length > 0 && (
             <div className={`mt-3 p-3 rounded-xl border text-xs ${
               isLight 
-                ? 'bg-purple-50/70 border-purple-200 text-purple-950' 
-                : 'bg-purple-950/30 border-purple-500/20 text-slate-300'
+                ? 'bg-amber-50/70 border-amber-200 text-amber-950' 
+                : 'bg-amber-950/20 border-amber-500/20 text-slate-300'
             }`}>
               <span className={`text-[11px] font-mono uppercase tracking-wider font-bold block mb-1.5 ${
-                isLight ? 'text-purple-800' : 'text-purple-400'
+                isLight ? 'text-amber-800' : 'text-amber-300'
               }`}>
                 {isKk ? 'Келесі қадамдар:' : 'Что нужно сделать дальше:'}
               </span>
@@ -291,7 +291,7 @@ export const ProgramCard: React.FC<ProgramCardProps> = ({
               className={`inline-flex items-center gap-1 text-xs font-bold transition-all ${
                 isLight 
                   ? 'text-sky-700 hover:text-sky-900' 
-                  : 'text-[#00E5FF] hover:text-white hover:drop-shadow-[0_0_6px_rgba(0,229,255,0.8)]'
+                  : 'text-[#00E5FF] hover:text-white '
               }`}
               title={`${s.title_ru} (${s.source_id})`}
             >
