@@ -68,7 +68,7 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
   const summaryLines: string[] = [];
   const unresolved: string[] = [];
 
-  const okedMatch = q.match(/(?:окэд|оквед)\s*(?:на|=|:)?\s*([a-zа-я]?\s*\d{1,2}(?:\.\d{1,3}){0,2}|[a-zа-я])/i);
+  const okedMatch = q.match(/(?:окэд|оквед)\s*(?:на|=|:|[-—–])?\s*([a-zа-я]?\s*\d{1,2}(?:\.\d{1,3}){0,2}|[a-zа-я])/i);
   if (okedMatch) {
     const value = okedMatch[1].replace(/\s+/g,'').toUpperCase();
     changes.push({ field:'oked_code', value });
