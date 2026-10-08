@@ -54,6 +54,11 @@ export const AIExpertPanel: React.FC<AIExpertPanelProps> = ({
         map.set(source.sourceId, { title: source.title, url: source.url, checkedOn: source.checkedOn });
       }
     }
+    const market = context?.alternativeFunding.market;
+    if (market) {
+      map.set('SRC-NBK-BASE-RATE',{title:'НБРК — базовая ставка (историческая запись базы)',url:market.baseRate.sourceUrl,checkedOn:market.baseRate.checkedOn});
+      for (const product of market.products) map.set(product.sourceId,{title:product.institution+' — '+product.productName,url:product.sourceUrl,checkedOn:product.checkedOn});
+    }
     return map;
   }, [context]);
 

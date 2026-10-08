@@ -151,7 +151,7 @@ export function composeExpertAnswer(context: ExpertContext, userText: string): E
       ...(products.length?[]:['Сопоставимых банковских продуктов в загруженной базе не найдено; следует проверить варианты непосредственно в банке.']),
       'Для предварительной фильтрации укажите форму бизнеса, сумму, цель, обеспечение и срок работы предприятия.'
     ];
-    return {intent,title:'Рыночное финансирование БВУ',body,sourceIds:[]};
+    return {intent,title:'Рыночное финансирование БВУ',body,sourceIds:[...(base.sourceUrl?['SRC-NBK-BASE-RATE']:[]),...products.map(p=>p.sourceId)]};
   }
 
   if (intent === 'guarantee_routes') {
