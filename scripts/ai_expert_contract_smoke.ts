@@ -139,3 +139,19 @@ assert(groupedAmountCommand.changes.some((c) => c.field === 'amount_kzt' && c.va
 assert(detectExpertIntent('сумма финансирования 300 000 000 тенге') === 'change_project_parameter', 'Direct amount declaration must be treated as project change');
 
 console.log('AI Expert v2 parser edge cases: OK');
+
+
+// AI Expert v3 contract checks
+const v3Summary=evaluatePrograms({...query,oked_code:'45.2',region_id:'astana-city',region_name:'Астана',location_name:'Астана',location_level:'city',amount_kzt:150_000_000,instrument_preference:'Гарантирование'});
+const v3=buildExpertContext(v3Summary);
+assert(Boolean(v3.alternativeFunding.market.baseRate),'Missing market reference');
+const bank=composeExpertAnswer(v3,'Какие банковские альтернативы есть?');
+assert(bank.intent==='market_funding','Banking intent not detected');
+assert(bank.body.some(x=>x.includes('Базовая ставка НБРК')),'Base rate missing');
+assert(bank.body.some(x=>x.includes('не ставка кредита')),'Base rate disclosure missing');
+assert(bank.body.some(x=>x.includes('проверен')),'Dated source missing');
+const guar=composeExpertAnswer(v3,'Какие гарантии Даму доступны?');
+assert(guar.intent==='guarantee_routes','Guarantee intent not detected');
+assert(guar.body.some(x=>x.includes('не означает одобрение')),'Guarantee disclaimer missing');
+assert(guar.body.some(x=>x.includes('Гарантийный фонд')),'Guarantee decisions missing');
+console.log('AI Expert v3 market and guarantee smoke: OK');

@@ -3,7 +3,7 @@ name: NC Decision quality gate
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/ai-expert-damu-v1, fix/qa-v2-oked-program-rules, fix/ai-expert-ui-p1-p2-2026-10-08, fix/ui-ux-stage3-eight-improvements, fix/ui-p3-final-polish]
+    branches: [main, feature/ai-expert-damu-v1, fix/qa-v2-oked-program-rules, fix/ai-expert-ui-p1-p2-2026-10-08, fix/ui-ux-stage3-eight-improvements, fix/ui-p3-final-polish, feature/ai-expert-finance-advisor-v3]
     paths:
       - 'src/**'
       - 'scripts/random_funding_smoke.ts'

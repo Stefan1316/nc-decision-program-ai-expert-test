@@ -83,6 +83,8 @@ function humanizeMissingInputs(items: string[]): string[] {
 
 export function detectExpertIntent(text: string): ExpertIntent {
   const q = text.toLowerCase();
+  if (/банковск|рыночн|бву|базов.*ставк|ставк.*нбрк|альтернатив.*финанс|коммерческ.*кредит|кредит.*банк/.test(q)) return 'market_funding';
+  if (/гарант|гарантийн.*фонд|гф\s*[12]/.test(q) && !/помен|измени|установ|постав|замени/.test(q)) return 'guarantee_routes';
   if (/источник|ссылка|регламент|официал/.test(q)) return 'show_sources';
   if (/не подход|почему.*(не|исключ)|исключен|отказ/.test(q)) return 'why_not';
   if (/уточн|не хватает|чего не хватает|добавить данные/.test(q)) return 'what_to_clarify';
@@ -138,6 +140,38 @@ export function composeExpertAnswer(context: ExpertContext, userText: string): E
   const excluded = context.decisions.filter((d) => d.decisionStatus === 'not_applicable');
   const sourceIds = uniq(context.decisions.flatMap((d) => d.sources.map((s) => s.sourceId)));
 
+  if (intent === 'market_funding') {
+    const fallback = context.alternativeFunding;
+    const products = fallback.market.products.slice(0,5);
+    const base = fallback.market.baseRate;
+    const body = [
+      'Рыночные продукты — ориентиры, а не одобрение банком или автоматическое подтверждение права на господдержку.',
+      `Базовая ставка НБРК в загруженной базе: ${base.ratePercent}% с ${base.effectiveFrom}; источник проверен ${base.checkedOn}. Это не ставка кредита предпринимателя. Необходимо проверить актуальность.`,
+      ...products.map(p => `${p.institution} — ${p.productName}: ${p.nominalRateText}; ${p.amountText || 'лимит уточняется'}; ${p.termText || 'срок уточняется'}; источник проверен ${p.checkedOn}. Требуется подтвердить условия и применимость в банке.`),
+      ...(products.length?[]:['Сопоставимых банковских продуктов в загруженной базе не найдено; следует проверить варианты непосредственно в банке.']),
+      'Для предварительной фильтрации укажите форму бизнеса, сумму, цель, обеспечение и срок работы предприятия.'
+    ];
+    return {intent,title:'Рыночное финансирование БВУ',body,sourceIds:[]};
+  }
+
+  if (intent === 'guarantee_routes') {
+    const candidates = context.decisions.filter(d=>/гарант|guarantee/i.test(d.instrument+' '+d.programName+' '+d.programId));
+    const body = [
+      'Гарантирование и субсидирование ставки — разные инструменты. Наличие источника не означает одобрение заявки.',
+      ...candidates.slice(0,5).map(d => {
+        const status = d.decisionStatus==='not_applicable'
+          ? `Не применимо: ${d.restrictions[0] || 'см. ограничения'}`
+          : d.decisionStatus==='exact_match'
+          ? 'Формальное соответствие выявлено; окончательное решение принимает институт финансирования.'
+          : `Применимость не подтверждена: ${d.missingInputs.slice(0,2).join('; ') || 'требуется дополнительная проверка'}`;
+        return `${d.programName}: ${d.decisionLabel}. ${status}`;
+      }),
+      ...(candidates.length?[]:['Гарантийные механизмы в текущем перечне не обнаружены.']),
+      'Для гарантии необходимо уточнить сумму, цель кредита, статус предприятия, кредитную историю и просроченную задолженность.'
+    ];
+    return {intent,title:'Гарантии «Даму»: отдельная проверка',body,sourceIds:uniq(candidates.flatMap(d=>d.sources.map(s=>s.sourceId)))};
+  }
+
   if (intent === 'show_sources') {
     const rows = uniq(context.decisions.flatMap((d) => d.sources.map((s) =>
       `${s.title}; проверено ${s.checkedOn}`
@@ -176,7 +210,7 @@ export function composeExpertAnswer(context: ExpertContext, userText: string): E
   }
 
   if (intent === 'next_steps') {
-    const missing = uniq(active.flatMap((d) => d.missingInputs));
+    const missing = humanizeMissingInputs(active.flatMap((d) => d.missingInputs));
     const steps = [
       missing.length ? `Уточнить недостающие данные: ${missing.slice(0, 3).join('; ')}.` : 'Зафиксировать выбранную программу и её действующие условия.',
       'Проверить официальный источник и дату актуальности условий.',

@@ -1,6 +1,7 @@
 import { resolveOked } from '../data/okedMaster';
 import { EvaluationSummary } from '../logic/decisionEngine';
 import { calculateReadiness } from '../logic/readiness';
+import { buildFundingFallback } from '../logic/fundingFallback';
 import { ProgramMatchResult } from '../types/damu';
 import { ExpertContext, ExpertProgramDecision } from './types';
 
@@ -80,6 +81,7 @@ export function buildExpertContext(summary: EvaluationSummary, generatedAt = new
       semantics: 'data_completeness_not_approval_probability'
     },
     decisions,
+    alternativeFunding: buildFundingFallback(summary),
     counts: {
       exact: summary.exact_matches.length,
       possible: summary.possible_matches.length,

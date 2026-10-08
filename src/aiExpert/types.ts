@@ -1,4 +1,5 @@
 import { ProgramStatus, UserQuery } from '../types/damu';
+import type { FundingFallbackRoute } from '../logic/fundingFallback';
 
 export type ExpertDecisionStatus = ProgramStatus;
 
@@ -69,6 +70,7 @@ export interface ExpertContext {
   project: ExpertProjectContext;
   readiness: ExpertReadinessContext;
   decisions: ExpertProgramDecision[];
+  alternativeFunding: FundingFallbackRoute;
   counts: {
     exact: number;
     possible: number;
@@ -90,6 +92,8 @@ export type ExpertIntent =
   | 'why_not'
   | 'what_to_clarify'
   | 'next_steps'
+  | 'market_funding'
+  | 'guarantee_routes'
   | 'compare_programs'
   | 'show_sources'
   | 'change_project_parameter';
