@@ -125,6 +125,8 @@ export interface UserQuery {
   social_enterprise_registry?: boolean | null;
   own_funds_percent?: number | null;
   domestic_equivalent_available?: boolean | null;
+  is_shopping_entertainment_center?: boolean | null;
+  working_capital_kz_manufacturer_registry?: boolean | null;
   refinancing_date?: string;
 }
 
