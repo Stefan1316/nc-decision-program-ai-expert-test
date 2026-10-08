@@ -633,8 +633,25 @@ export function evaluatePrograms(query: UserQuery): EvaluationSummary {
       ).values()
     );
 
+    const effectiveProgram =
+      (prog.id === 'damu.subsidy.inner_trade' || prog.id === 'damu.subsidy.retail_trade')
+        ? {
+            ...prog,
+            amount_max_kzt:
+              query.settlement_type_confirmed === true && (query.settlement_type === 'monotown' || query.settlement_type === 'village')
+                ? 1_500_000_000
+                : prog.amount_max_kzt,
+            amount_max_text:
+              query.settlement_type_confirmed === true && query.settlement_type === 'regional_city'
+                ? 'до 3 млрд тг для городов областного значения'
+                : query.settlement_type_confirmed === true && (query.settlement_type === 'monotown' || query.settlement_type === 'village')
+                  ? 'до 1,5 млрд тг для моно-/малых городов и сельских населённых пунктов'
+                  : 'до 3 млрд тг в городах областного значения; до 1,5 млрд тг в моно-/малых городах и сельских населённых пунктах'
+          }
+        : prog;
+
     const result: ProgramMatchResult = {
-      program: { ...prog, sources: hydratedSources },
+      program: { ...effectiveProgram, sources: hydratedSources },
       status,
       status_label_ru,
       matched_reasons,
