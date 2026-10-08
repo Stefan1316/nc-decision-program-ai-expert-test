@@ -63,6 +63,7 @@ for (const city of ['Алматы', 'Астана', 'Шымкент']) {
     is_shopping_entertainment_center: false
   })), INNER);
   assert(result.status === 'exact_match', `68.20.4 regional-city case should be exact after confirmations; got ${result.status}`);
+  assert(result.program.amount_max_kzt === 3_000_000_000, 'Regional-city trade cap must be 3bn KZT');
 }
 
 // 68.20.4: mono/small/rural cap is 1.5bn.
@@ -74,6 +75,7 @@ for (const city of ['Алматы', 'Астана', 'Шымкент']) {
     is_shopping_entertainment_center: false
   })), INNER);
   assert(result.status === 'not_applicable', `2bn in mono/small/rural must exceed Inner Trade 1.5bn cap; got ${result.status}`);
+  assert(result.program.amount_max_kzt === 1_500_000_000, 'Mono/small/rural trade cap shown to user must be 1.5bn KZT');
 }
 
 // 68.20.4: shopping malls are excluded.
@@ -125,9 +127,9 @@ for (const city of ['Алматы', 'Астана', 'Шымкент']) {
 }
 
 // 62.0 and 55.30 are official Orleu priority codes.
-for (const oked of ['62.0', '55.30']) {
+for (const oked of ['62,0', '55,30']) {
   const result = program(evaluatePrograms(baseQuery({ oked_code: oked })), ORLEU);
-  assert(result.status === 'exact_match', `${oked} must match Orleu; got ${result.status}`);
+  assert(result.status === 'exact_match', `${oked} (comma input) must normalize and match Orleu; got ${result.status}`);
 }
 
 // 85.1 is not an Orleu priority.
