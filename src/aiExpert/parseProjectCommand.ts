@@ -78,7 +78,8 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
 
   const explicitAmountCue = /сумм|размер\s+финансирован|объем\s+финансирован|объём\s+финансирован|запрашива.*сумм|запрос.*(?:тг|тенге|млн|млрд)/.test(q);
   if (explicitAmountCue) {
-    const amount = parseAmount(text);
+    const amountSegment = q.match(/(?:сумм[аыуеой]?|размер\s+финансировани[яе]|объ[её]м\s+финансировани[яе])(?:\s+финансировани[яе])?\s*(?:на|в|=|-)?\s*(.*)/);
+    const amount = parseAmount(amountSegment?.[1] || text);
     if (amount) {
       changes.push({ field:'amount_kzt', value:amount });
       summaryLines.push(`Сумма финансирования → ${formatKzt(amount)}`);
