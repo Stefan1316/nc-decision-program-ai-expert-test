@@ -84,13 +84,17 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
     // If the user gave competing figures in the same request, do not silently pick the first.
     const figureMatches = Array.from(segment.matchAll(/\d+(?:[\s.,]\d+)*\s*(?:млрд|миллиард(?:ов|а)?|млн|миллион(?:ов|а)?|тыс|тысяч(?:а|и)?)?\s*(?:тг|тенге)?/g))
       .map((m) => parseAmount(m[0])).filter((v): v is number => v !== null);
+    const invalidCurrency = /\b(?:доллар(?:ов|а|ы)?|usd|евро|eur|рубл(?:ей|и)?|rub)\b/.test(segment);
+    const negativeAmount = /(?:^|\s)-\s*\d+/.test(segment);
     const conflictingAmounts = new Set(figureMatches).size > 1;
+    if (invalidCurrency) unresolved.push('Указана иностранная валюта. Уточните сумму в тенге.');
+    if (negativeAmount) unresolved.push('Сумма финансирования не может быть отрицательной.');
     if (conflictingAmounts) unresolved.push('Указаны разные суммы финансирования. Уточните одну итоговую сумму.');
 
-    if (amount && !conflictingAmounts) {
+    if (amount && !conflictingAmounts && !invalidCurrency && !negativeAmount) {
       changes.push({ field:'amount_kzt', value:amount });
       summaryLines.push(`Сумма финансирования → ${formatKzt(amount)}`);
-    } else if (!conflictingAmounts) {
+    } else if (!conflictingAmounts && !invalidCurrency && !negativeAmount) {
       unresolved.push('Не удалось однозначно определить сумму финансирования.');
     }
   }
@@ -128,7 +132,10 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
     // In "из X в Y" or "из X в Y" with the word "перенеси", resolve only the destination.
     const movement = q.match(/(?:^|\s)(?:перенеси|переведи|перемести|перенести)\s+[\s\S]*?\sиз\s+(.+?)\s+(?:в|во)\s+(.+)$/);
     const destinationText = movement ? movement[2] : text;
-    const district = findDistrict(destinationText);
+    const topCities = KAZAKHSTAN_TERRITORIES.filter(t=>t.level==='city' && t.id.endsWith('-city') && (normalize(destinationText).includes(normalize(t.name)) || (t.id==='astana-city' && /астану/.test(normalize(destinationText)))));
+    const cityConflict = topCities.length > 1;
+    if (cityConflict) unresolved.push('Указаны несколько возможных городов. Уточните одну территорию реализации проекта.');
+    const district = cityConflict ? null : findDistrict(destinationText);
     if (district) {
       changes.push(
         { field:'region_id', value:district.regionId },
@@ -139,7 +146,7 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
       );
       summaryLines.push(`Территория → ${district.name}`);
     } else {
-      const territory = findTerritory(destinationText);
+      const territory = cityConflict ? null : findTerritory(destinationText);
       if (territory) {
         changes.push(
           { field:'region_id', value:territory.id },
