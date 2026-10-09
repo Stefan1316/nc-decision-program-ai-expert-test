@@ -1,0 +1,23 @@
+import {parseProjectCommand} from '../src/aiExpert/parseProjectCommand';
+import {composeExpertAnswer, detectExpertIntent} from '../src/aiExpert/composeExpertAnswer';
+import {buildExpertContext} from '../src/aiExpert/buildExpertContext';
+import {evaluatePrograms} from '../src/logic/decisionEngine';
+import {getMarketFundingSnapshot} from '../src/data/bankMarketRates';
+import type {UserQuery} from '../src/types/damu';
+const failures:string[]=[];
+function check(name:string,ok:boolean,detail=''){console.log((ok?'FINAL_PASS ':'FINAL_FAIL ')+name+' '+detail);if(!ok)failures.push(name);}
+const q:UserQuery={oked_code:'45.2',region_id:'astana-city',region_name:'Астана',location_name:'Астана',location_level:'city',location_role:'project',district_name:'',settlement_type:'',settlement_type_confirmed:false,entity_type:'ТОО',business_status:'действующий',operating_years:3,purpose:'Инвестиции',amount_kzt:150000000,instrument_preference:'Гарантирование',tax_arrears:false,overdue_debt_days:0,social_enterprise_registry:false};
+const ctx=buildExpertContext(evaluatePrograms(q));
+const test=(text:string)=>parseProjectCommand(text);
+check('Reject competing territories',test('Перенеси проект в Алматы или Астану').unresolved.length>0,JSON.stringify(test('Перенеси проект в Алматы или Астану')));
+check('Reject amount range',test('Измени сумму с 100 до 200 млн').unresolved.length>0,JSON.stringify(test('Измени сумму с 100 до 200 млн')));
+check('Reject non-KZT amount',test('Измени сумму на 100 млн долларов').unresolved.length>0,JSON.stringify(test('Измени сумму на 100 млн долларов')));
+check('Reject negative amount',test('Измени сумму на -100 млн тенге').unresolved.length>0,JSON.stringify(test('Измени сумму на -100 млн тенге')));
+check('Accept valid KZT',test('Измени сумму на 150 млн тенге').changes.some(x=>x.field==='amount_kzt'&&x.value===150000000));
+const gf=composeExpertAnswer(ctx,'Почему мне не подходит Гарантийный фонд 1?');
+check('Guarantee no approval invented',!gf.body.some(s=>/гарантия одобрена|кредит одобрен/.test(s)));
+const market=getMarketFundingSnapshot(q);
+check('All bank sources dated',market.products.every(p=>Boolean(p.checkedOn)));
+const resp=composeExpertAnswer(ctx,'Какие банковские альтернативы?');
+check('Bank response displays verified-on date',resp.body.some(s=>/источник проверен/.test(s)));
+console.log('FINAL_ACCEPTANCE_SUMMARY '+JSON.stringify({total:8,failures}));if(failures.length)process.exitCode=1;
