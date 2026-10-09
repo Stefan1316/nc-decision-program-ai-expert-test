@@ -13,6 +13,7 @@
     "sync:oked": "node scripts/sync_oked_master.mjs",
     "test:smoke": "tsx scripts/random_funding_smoke.ts",
     "test:ai-expert": "tsx scripts/ai_expert_contract_smoke.ts",
+    "test:ai-expert-hardening": "tsx scripts/ai_expert_v3_hardening.ts",
     "test:qa-v2": "tsx scripts/qa_v2_program_rules.ts"
   },
   "dependencies": {
