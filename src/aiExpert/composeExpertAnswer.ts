@@ -84,7 +84,7 @@ function humanizeMissingInputs(items: string[]): string[] {
 
 export function detectExpertIntent(text: string): ExpertIntent {
   const q = text.toLowerCase();
-  if (/банковск|рыночн|бву|базов.*ставк|ставк.*нбрк|альтернатив.*финанс|коммерческ.*кредит|кредит.*банк/.test(q)) return 'market_funding';
+  if (/банковск|банки|банков|рыночн|бву|базов.*ставк|ставк.*нбрк|альтернатив.*финанс|коммерческ.*кредит|кредит.*банк/.test(q)) return 'market_funding';
   if (/гарант|гарантийн.*фонд|гф\s*[12]/.test(q) && !/помен|измени|установ|постав|замени/.test(q)) return 'guarantee_routes';
   if (/источник|ссылка|регламент|официал/.test(q)) return 'show_sources';
   if (/не подход|почему.*(не|исключ)|исключен|отказ/.test(q)) return 'why_not';
