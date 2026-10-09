@@ -141,7 +141,7 @@ export function composeExpertAnswer(context: ExpertContext, userText: string): E
   const excluded = context.decisions.filter((d) => d.decisionStatus === 'not_applicable');
   const sourceIds = uniq(context.decisions.flatMap((d) => d.sources.map((s) => s.sourceId)));
 
-  if (intent === 'market_funding') return answerBankFunding(context);
+  if (intent === 'market_funding') return answerBankFunding(context, userText);
   if (intent === 'guarantee_routes') return answerGuarantees(context,userText);
 
   if (intent === 'show_sources') {
