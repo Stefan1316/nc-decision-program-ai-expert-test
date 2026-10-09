@@ -82,7 +82,7 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
     const segment = amountSegment?.[1] || text;
     const amount = parseAmount(segment);
     // If the user gave competing figures in the same request, do not silently pick the first.
-    const figureMatches = Array.from(segment.matchAll(/\\d+(?:[\\s.,]\\d+)*\\s*(?:млрд|миллиард(?:ов|а)?|млн|миллион(?:ов|а)?|тыс|тысяч(?:а|и)?)?\\s*(?:тг|тенге)?/g))
+    const figureMatches = Array.from(segment.matchAll(/\d+(?:[\s.,]\d+)*\s*(?:млрд|миллиард(?:ов|а)?|млн|миллион(?:ов|а)?|тыс|тысяч(?:а|и)?)?\s*(?:тг|тенге)?/g))
       .map((m) => parseAmount(m[0])).filter((v): v is number => v !== null);
     const conflictingAmounts = new Set(figureMatches).size > 1;
     if (conflictingAmounts) unresolved.push('Указаны разные суммы финансирования. Уточните одну итоговую сумму.');
@@ -126,7 +126,7 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
 
   if (/регион|област|город|район|территор|проверь\s+(в|для)|замени.*(на|город|област)/.test(q)) {
     // In "из X в Y" or "из X в Y" with the word "перенеси", resolve only the destination.
-    const movement = q.match(/\\b(?:перенеси|переведи|перемести|перенести)\\b[\\s\\S]*?\\bиз\\s+(.+?)\\s+\\b(?:в|во)\\s+(.+)$/);
+    const movement = q.match(/\b(?:перенеси|переведи|перемести|перенести)\b[\s\S]*?\bиз\s+(.+?)\s+\b(?:в|во)\s+(.+)$/);
     const destinationText = movement ? movement[2] : text;
     const district = findDistrict(destinationText);
     if (district) {
