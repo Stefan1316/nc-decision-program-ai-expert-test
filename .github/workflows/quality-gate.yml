@@ -3,11 +3,12 @@ name: NC Decision quality gate
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/ai-expert-damu-v1, fix/qa-v2-oked-program-rules, fix/ai-expert-ui-p1-p2-2026-10-08, fix/ui-ux-stage3-eight-improvements, fix/ui-p3-final-polish, feature/ai-expert-finance-advisor-v3]
+    branches: [main, feature/ai-expert-damu-v1, fix/qa-v2-oked-program-rules, fix/ai-expert-ui-p1-p2-2026-10-08, fix/ui-ux-stage3-eight-improvements, fix/ui-p3-final-polish, feature/ai-expert-finance-advisor-v3, qa/ai-expert-v3-hardening-2026-10-09]
     paths:
       - 'src/**'
       - 'scripts/random_funding_smoke.ts'
       - 'scripts/ai_expert_contract_smoke.ts'
+      - 'scripts/ai_expert_v3_hardening.ts'
       - 'scripts/qa_v2_program_rules.ts'
       - 'package.json'
       - '.github/workflows/quality-gate.yml'
@@ -30,5 +31,7 @@ jobs:
         run: npm run test:smoke
       - name: AI Expert contract smoke tests
         run: npm run test:ai-expert
+      - name: AI Expert v3 hardening
+        run: npm run test:ai-expert-hardening
       - name: QA v2 program-rules matrix
         run: npm run test:qa-v2
