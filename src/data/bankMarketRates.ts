@@ -194,5 +194,17 @@ export function getMarketFundingSnapshot(query: UserQuery): MarketFundingSnapsho
     return true;
   });
 
-  return { baseRate: NBK_BASE_RATE, products };
+  const filtered = products.filter((product) => {
+    // 30-day operating limit is not a comparable multi-year investment loan.
+    if (query.purpose === 'Инвестиции' && product.sourceId.includes('BCC-CREDIT-LIMIT')) return false;
+    if (query.purpose === 'Инвестиции' && product.sourceId.includes('FORTE-AUTO')) return false;
+    return true;
+  });
+  const priority = (product: MarketRateSource): number => {
+    const purposeText = product.purposeText || '';
+    if (query.purpose === 'Инвестиции') return /инвестиц|основные средства|оборудован|недвижим|имущество|развитие бизнеса/i.test(purposeText) ? 2 : 0;
+    if (query.purpose === 'Оборотные средства') return /оборотн|операционн/i.test(purposeText) ? 2 : 0;
+    return 1;
+  };
+  return { baseRate: NBK_BASE_RATE, products: filtered.sort((a,b) => priority(b)-priority(a)) };
 }
