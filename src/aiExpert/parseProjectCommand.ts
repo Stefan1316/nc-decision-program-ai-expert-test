@@ -84,7 +84,7 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
     // If the user gave competing figures in the same request, do not silently pick the first.
     const figureMatches = Array.from(segment.matchAll(/\d+(?:[\s.,]\d+)*\s*(?:млрд|миллиард(?:ов|а)?|млн|миллион(?:ов|а)?|тыс|тысяч(?:а|и)?)?\s*(?:тг|тенге)?/g))
       .map((m) => parseAmount(m[0])).filter((v): v is number => v !== null);
-    const invalidCurrency = /\b(?:доллар(?:ов|а|ы)?|usd|евро|eur|рубл(?:ей|и)?|rub)\b/.test(segment);
+    const invalidCurrency = /(?:^|\s)(?:доллар(?:ов|а|ы)?|usd|евро|eur|рубл(?:ей|и)?|rub)(?:\s|$)/.test(segment);
     const negativeAmount = /(?:^|\s)-\s*\d+/.test(segment);
     const conflictingAmounts = new Set(figureMatches).size > 1;
     if (invalidCurrency) unresolved.push('Указана иностранная валюта. Уточните сумму в тенге.');
