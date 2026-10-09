@@ -43,7 +43,7 @@ export function answerBankFunding(c:ExpertContext): ExpertAnswer {
  return {intent:'market_funding',title:'Рыночное финансирование БВУ',body,sourceIds:[...(base.sourceUrl?['SRC-NBK-BASE-RATE']:[]),...products.map(x=>x.sourceId)]};
 }
 export function answerGuarantees(c:ExpertContext,userText:string): ExpertAnswer {
- const focused=/(?:гф\s*1|гарантийн[^\s]*\s+фонд[^\s]*\s*1|guarantee_fund_1)/i.test(userText);
+ const focused=/(?:гф\s*1|гаранти[^\s]*\s+фонд[^\s]*\s*1|guarantee_fund_1)/i.test(userText);
  const gf1=c.decisions.find(x=>x.programId==='damu.guarantee.guarantee_fund_1');
  if(focused){
   if(!gf1)return {intent:'guarantee_routes',title:'Гарантийный фонд 1 «Даму»',body:['По текущему анализу ГФ-1 не найден. Требуется сверка с официальными правилами.'],sourceIds:[]};
