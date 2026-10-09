@@ -124,7 +124,7 @@ export function parseProjectCommand(text: string): ParsedProjectCommand {
     summaryLines.push(`Инструмент → ${instrument}`);
   }
 
-  if (/регион|област|город|район|территор|проверь\s+(в|для)|замени.*(на|город|област)/.test(q)) {
+  if (/регион|област|город|район|территор|проверь\s+(в|для)|замени.*(на|город|област)|перенеси|переведи|перемести/.test(q)) {
     // In "из X в Y" or "из X в Y" with the word "перенеси", resolve only the destination.
     const movement = q.match(/(?:^|\s)(?:перенеси|переведи|перемести|перенести)\s+[\s\S]*?\sиз\s+(.+?)\s+(?:в|во)\s+(.+)$/);
     const destinationText = movement ? movement[2] : text;
