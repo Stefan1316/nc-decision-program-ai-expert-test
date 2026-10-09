@@ -37,5 +37,7 @@ jobs:
         run: npx tsx scripts/ai_expert_v3_edge_cases.ts
       - name: AI Expert v3 final acceptance
         run: npx tsx scripts/ai_expert_v3_final_acceptance.ts
+      - name: AI Expert rate-source freshness tests
+        run: npx tsx scripts/ai_expert_v3_finance_source_guard.ts
       - name: QA v2 program-rules matrix
         run: npm run test:qa-v2
