@@ -1,3 +1,4 @@
+import {resolveQuestionEntity} from './questionEntity';
 import type { ExpertContext } from './types';
 import type { ExpertAnswer } from './composeExpertAnswer';
 
@@ -7,17 +8,19 @@ function isStale(date: string, now: string): boolean {
  const x=Date.parse(date+'T00:00:00Z'),y=Date.parse(now+'T00:00:00Z');
  return !Number.isFinite(x)||!Number.isFinite(y)||x>y||y-x>30*86400000;
 }
-export function answerBankFunding(c:ExpertContext): ExpertAnswer {
- const p=c.project,market=c.alternativeFunding.market,products=market.products.slice(0,5),base=market.baseRate;
+export function answerBankFunding(c:ExpertContext,userText=''): ExpertAnswer {
+ const p=c.project,market=c.alternativeFunding.market,base=market.baseRate;
+ const evidence=resolveQuestionEntity(c,userText);
+ const products=(evidence.value==='ТОО'?market.products.filter(x=>!x.sourceId.includes('BEREKE-IP')&&!x.sourceId.includes('HALYK-ONLINE-IP')):evidence.value==='ИП'?market.products:market.products).slice(0,5);
  const known=[
   'ОКЭД '+p.okedCode+(p.region?' · '+p.region:''),
-  p.entityType?'форма бизнеса '+p.entityType:'',
+  p.entityType?'форма бизнеса '+p.entityType:(evidence.value?'форма бизнеса '+evidence.value+' (со слов заявителя)':''),
   p.amountKzt?'запрос '+fmt(p.amountKzt):'',
   p.purpose?'цель '+p.purpose:'',
   p.operatingYears!==undefined&&p.operatingYears!==null?'действует '+p.operatingYears+' лет':''
  ].filter(Boolean);
  const missing=[
-  !p.entityType?'форму бизнеса':null,
+  !p.entityType&&!evidence.value?'форму бизнеса':null,
   !p.amountKzt?'сумму кредита':null,
   !p.purpose?'цель финансирования':null,
   p.operatingYears===undefined||p.operatingYears===null?'срок деятельности бизнеса':null,
@@ -26,10 +29,11 @@ export function answerBankFunding(c:ExpertContext): ExpertAnswer {
  const body=[
   'Предварительные банковские ориентиры по опубликованным тарифам. Это не означает одобрение банком и не подтверждает соответствия всем условиям.',
   'Уже известно о проекте: '+known.join('; ')+'.',
+  ...(evidence.note?[evidence.note]:[]),
   'Базовая ставка НБРК в загруженной базе: '+base.ratePercent+'% с '+base.effectiveFrom+'; источник проверен '+base.checkedOn+'. Это не ставка кредита предпринимателя.',
   ...products.map(product=>{
    const compared=[
-    p.entityType?'заявитель '+p.entityType+' (допустимая категория по опубликованному тарифу: '+(product.borrowerText||'не установлена')+')':'',
+    evidence.value?'заявитель '+evidence.value+' (допустимая категория по опубликованному тарифу: '+(product.borrowerText||'не установлена')+')':'',
     p.amountKzt?'сумма '+fmt(p.amountKzt)+' прошла предварительный фильтр известного верхнего лимита':'',
     p.purpose?'цель '+p.purpose+' (по источнику: '+(product.purposeText||'не указана')+')':''
    ].filter(Boolean);
