@@ -1,3 +1,4 @@
+import { answerBankFunding, answerGuarantees } from './answerFinancing';
 import { ExpertContext, ExpertIntent } from './types';
 
 export interface ExpertAnswer {
@@ -140,40 +141,8 @@ export function composeExpertAnswer(context: ExpertContext, userText: string): E
   const excluded = context.decisions.filter((d) => d.decisionStatus === 'not_applicable');
   const sourceIds = uniq(context.decisions.flatMap((d) => d.sources.map((s) => s.sourceId)));
 
-  if (intent === 'market_funding') {
-    const fallback = context.alternativeFunding;
-    const products = fallback.market.products.slice(0,5);
-    const generatedDate = context.generatedAt.slice(0,10);
-    const isOld = (date: string) => { const ref = Date.parse(generatedDate + 'T00:00:00Z'); const checked = Date.parse(date + 'T00:00:00Z'); return !Number.isFinite(checked) || !Number.isFinite(ref) || checked > ref || ref - checked > 30 * 86400000; };
-    const base = fallback.market.baseRate;
-    const body = [
-      'Рыночные продукты — ориентиры, а не одобрение банком или автоматическое подтверждение права на господдержку.',
-      `Базовая ставка НБРК в загруженной базе: ${base.ratePercent}% с ${base.effectiveFrom}; источник проверен ${base.checkedOn}. Это не ставка кредита предпринимателя. Необходимо проверить актуальность.`,
-      ...products.map(p => `${p.institution} — ${p.productName}: ${p.nominalRateText}; ${p.amountText || 'лимит уточняется'}; ${p.termText || 'срок уточняется'}; источник проверен ${p.checkedOn}. Требуется подтвердить условия и применимость в банке.`),
-      ...(products.length?[]:['Сопоставимых банковских продуктов в загруженной базе не найдено; следует проверить варианты непосредственно в банке.']),
-      ...(isOld(base.checkedOn) || products.some(p=>isOld(p.checkedOn)) ? ['ВНИМАНИЕ: как минимум один источник не проверялся более 30 дней, имеет некорректную или будущую дату. Условия требуют повторной сверки на официальном сайте.'] : []),
-      'Для предварительной фильтрации укажите форму бизнеса, сумму, цель, обеспечение и срок работы предприятия.'
-    ];
-    return {intent,title:'Рыночное финансирование БВУ',body,sourceIds:[...(base.sourceUrl?['SRC-NBK-BASE-RATE']:[]),...products.map(p=>p.sourceId)]};
-  }
-
-  if (intent === 'guarantee_routes') {
-    const candidates = context.decisions.filter(d=>/гарант|guarantee/i.test(d.instrument+' '+d.programName+' '+d.programId));
-    const body = [
-      'Гарантирование и субсидирование ставки — разные инструменты. Наличие источника не означает одобрение заявки.',
-      ...candidates.slice(0,5).map(d => {
-        const status = d.decisionStatus==='not_applicable'
-          ? `Не применимо: ${d.restrictions[0] || 'см. ограничения'}`
-          : d.decisionStatus==='exact_match'
-          ? 'Формальное соответствие выявлено; окончательное решение принимает институт финансирования.'
-          : `Применимость не подтверждена: ${d.missingInputs.slice(0,2).join('; ') || 'требуется дополнительная проверка'}`;
-        return `${d.programName}: ${d.decisionLabel}. ${status}`;
-      }),
-      ...(candidates.length?[]:['Гарантийные механизмы в текущем перечне не обнаружены.']),
-      'Для гарантии необходимо уточнить сумму, цель кредита, статус предприятия, кредитную историю и просроченную задолженность.'
-    ];
-    return {intent,title:'Гарантии «Даму»: отдельная проверка',body,sourceIds:uniq(candidates.flatMap(d=>d.sources.map(s=>s.sourceId)))};
-  }
+  if (intent === 'market_funding') return answerBankFunding(context);
+  if (intent === 'guarantee_routes') return answerGuarantees(context,userText);
 
   if (intent === 'show_sources') {
     const rows = uniq(context.decisions.flatMap((d) => d.sources.map((s) =>
