@@ -1,0 +1,24 @@
+import { detectExpertIntent, composeExpertAnswer } from '../src/aiExpert/composeExpertAnswer';
+import { parseProjectCommand } from '../src/aiExpert/parseProjectCommand';
+import { evaluatePrograms } from '../src/logic/decisionEngine';
+import { buildExpertContext } from '../src/aiExpert/buildExpertContext';
+import type { UserQuery } from '../src/types/damu';
+const q: UserQuery = {oked_code:'45.2',location_name:'Астана',location_level:'city',location_role:'project',region_id:'astana-city',region_name:'Астана',district_name:'',settlement_type:'',settlement_type_confirmed:false,entity_type:'ТОО',business_status:'действующий',operating_years:3,purpose:'Инвестиции',amount_kzt:150_000_000,instrument_preference:'Гарантирование',tax_arrears:false,overdue_debt_days:0,social_enterprise_registry:false};
+const c=buildExpertContext(evaluatePrograms(q));
+const failures:string[]=[];
+function test(label:string,condition:boolean,detail=''){console.log((condition?'PASS':'FAIL')+' | '+label+(detail?' | '+detail:''));if(!condition)failures.push(label);}
+test('Question on guarantee exclusion retains guarantee intent',detectExpertIntent('Почему гарантийный фонд 1 мне не подходит?')==='guarantee_routes');
+test('Market alternative request recognized',detectExpertIntent('Какие банковские альтернативы есть?')==='market_funding');
+test('Natural OKED amount composite command classified as change',detectExpertIntent('Поменяй ОКЭД на 45.2 и сумму на 300 млн тенге')==='change_project_parameter');
+const mixed=parseProjectCommand('Поменяй ОКЭД на 45.2 и сумму на 300 млн тенге');
+test('Composite command parses OKED',mixed.changes.some(x=>x.field==='oked_code'&&x.value==='45.2'),JSON.stringify(mixed.changes));
+test('Composite command parses 300 million, not the OKED code',mixed.changes.some(x=>x.field==='amount_kzt'&&x.value===300000000),JSON.stringify(mixed.changes));
+const detail=composeExpertAnswer(c,'Почему гарантийный фонд 1 мне не подходит?');
+test('Guarantee answer must preserve decision-engine statuses',detail.body.some(x=>/не применимо|не подтвержден|соответств/i.test(x)));
+const banks=composeExpertAnswer(c,'Какие банковские альтернативы есть?');
+test('Bank answer disclaims nonapproval',banks.body.some(x=>/не одобрение|не означает одобрени/i.test(x)));
+test('Bank answer provides official source IDs',banks.sourceIds.length>0);
+test('User must not mistake NBK base rate for loan rate',banks.body.some(x=>/не ставка кредита/.test(x)));
+const ambiguous=parseProjectCommand('Поменяй ОКЭД');
+test('Ambiguous OKED change does not alter project',!ambiguous.recognized);
+console.log('QA_V3_HARDENING_SUMMARY '+JSON.stringify({total:10,failed:failures.length,failures}));if(failures.length)process.exitCode=1;
