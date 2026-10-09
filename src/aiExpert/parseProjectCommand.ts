@@ -52,7 +52,7 @@ function formatKzt(value: number): string {
 function findTerritory(text: string) {
   const q = normalize(text);
   const sorted = [...KAZAKHSTAN_TERRITORIES].sort((a,b) => b.name.length - a.name.length);
-  return sorted.find((item) => q.includes(normalize(item.name))) || null;
+  return sorted.find((item) => q.includes(normalize(item.name)) || (item.id === 'astana-city' && /астану(?:\s|$)/.test(q))) || null;
 }
 
 function findDistrict(text: string) {
