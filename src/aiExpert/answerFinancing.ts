@@ -61,5 +61,5 @@ export function answerGuarantees(c:ExpertContext,userText:string): ExpertAnswer 
   return {intent:'guarantee_routes',title:'Гарантийный фонд 1 «Даму» — проверка проекта',body,sourceIds:uniq(gf1.sources.map(x=>x.sourceId))};
  }
  const candidates=c.decisions.filter(x=>/гарант|guarantee/i.test(x.instrument+' '+x.programName+' '+x.programId));
- return {intent:'guarantee_routes',title:'Гарантии «Даму»: обзор',body:['Гарантирование и субсидирование ставки — разные инструменты; наличие источника не означает одобрение заявки.',...candidates.slice(0,5).map(x=>x.programName+': '+x.decisionLabel+'. '+(x.restrictions[0]||x.missingInputs[0]||'Уточните условия.')),'Для индивидуального разбора назовите механизм, например «Гарантийный фонд 1».'],sourceIds:uniq(candidates.slice(0,5).flatMap(x=>x.sources.map(s=>s.sourceId)))};
+ return {intent:'guarantee_routes',title:'Гарантии «Даму»: отдельная проверка',body:['Гарантирование и субсидирование ставки — разные инструменты; наличие источника не означает одобрение заявки.',...candidates.slice(0,5).map(x=>x.programName+': '+x.decisionLabel+'. '+(x.restrictions[0]||x.missingInputs[0]||'Уточните условия.')),'Для индивидуального разбора назовите механизм, например «Гарантийный фонд 1».'],sourceIds:uniq(candidates.slice(0,5).flatMap(x=>x.sources.map(s=>s.sourceId)))};
 }
