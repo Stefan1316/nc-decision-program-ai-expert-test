@@ -143,12 +143,15 @@ export function composeExpertAnswer(context: ExpertContext, userText: string): E
   if (intent === 'market_funding') {
     const fallback = context.alternativeFunding;
     const products = fallback.market.products.slice(0,5);
+    const generatedDate = context.generatedAt.slice(0,10);
+    const isOld = (date: string) => { const ref = Date.parse(generatedDate + 'T00:00:00Z'); const checked = Date.parse(date + 'T00:00:00Z'); return !Number.isFinite(checked) || !Number.isFinite(ref) || checked > ref || ref - checked > 30 * 86400000; };
     const base = fallback.market.baseRate;
     const body = [
       'Рыночные продукты — ориентиры, а не одобрение банком или автоматическое подтверждение права на господдержку.',
       `Базовая ставка НБРК в загруженной базе: ${base.ratePercent}% с ${base.effectiveFrom}; источник проверен ${base.checkedOn}. Это не ставка кредита предпринимателя. Необходимо проверить актуальность.`,
       ...products.map(p => `${p.institution} — ${p.productName}: ${p.nominalRateText}; ${p.amountText || 'лимит уточняется'}; ${p.termText || 'срок уточняется'}; источник проверен ${p.checkedOn}. Требуется подтвердить условия и применимость в банке.`),
       ...(products.length?[]:['Сопоставимых банковских продуктов в загруженной базе не найдено; следует проверить варианты непосредственно в банке.']),
+      ...(isOld(base.checkedOn) || products.some(p=>isOld(p.checkedOn)) ? ['ВНИМАНИЕ: как минимум один источник не проверялся более 30 дней, имеет некорректную или будущую дату. Условия требуют повторной сверки на официальном сайте.'] : []),
       'Для предварительной фильтрации укажите форму бизнеса, сумму, цель, обеспечение и срок работы предприятия.'
     ];
     return {intent,title:'Рыночное финансирование БВУ',body,sourceIds:[...(base.sourceUrl?['SRC-NBK-BASE-RATE']:[]),...products.map(p=>p.sourceId)]};

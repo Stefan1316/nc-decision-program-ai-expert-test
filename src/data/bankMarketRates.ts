@@ -98,15 +98,15 @@ export const BANK_MARKET_RATES: MarketRateSource[] = [
     institution: 'Банк ЦентрКредит',
     institutionType: 'bank',
     productName: 'Растущий бизнес',
-    nominalRateText: 'ставка зависит от формы заёмщика и обеспечения; опубликованные диапазоны начинаются от 22,45%–25,00%',
-    aeirText: 'опубликованные диапазоны ГЭСВ зависят от варианта продукта',
+    nominalRateText: 'ставка различается по форме заёмщика, обеспечению и варианту кредита; конкретные диапазоны следует уточнить по действующему тарифу банка',
+    aeirText: 'ГЭСВ зависит от выбранного банковского продукта и условий заёмщика; требуется подтверждение действующего тарифа',
     amountText: 'до 300 млн ₸ по залоговому варианту; беззалоговые лимиты ниже',
     termText: 'до 120 месяцев по инвестиционному залоговому финансированию',
     borrowerText: 'ИП и юридические лица',
     purposeText: 'развитие бизнеса / инвестиции',
     sourceUrl: 'https://www.bcc.kz/business/loans/growing-business/',
     checkedOn: '2026-10-06',
-    dataQuality: 'high'
+    dataQuality: 'medium'
   },
   {
     sourceId: 'SRC-FORTE-COLLATERAL-IP-20261006',
