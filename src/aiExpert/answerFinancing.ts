@@ -38,12 +38,12 @@ export function answerBankFunding(c:ExpertContext): ExpertAnswer {
   ...(products.length?[]:['Не найдено сопоставимых банковских продуктов по известным ограничениям.']),
   'Ещё необходимо уточнить: '+missing.join('; ')+'.',
   'Банк самостоятельно проверяет финансовую отчётность, кредитную историю, долговую нагрузку, денежные потоки, оценку обеспечения и внутренние критерии. Решение банка не предопределено.',
-  ...(isStale(base.checkedOn,c.generatedAt.slice(0,10))||products.some(x=>isStale(x.checkedOn,c.generatedAt.slice(0,10)))?['ВНИМАНИЕ: некоторые источники старше 30 дней либо имеют будущую/некорректную дату. Перед использованием необходима повторная проверка.']:[])
+  ...(isStale(base.checkedOn,c.generatedAt.slice(0,10))||products.some(x=>isStale(x.checkedOn,c.generatedAt.slice(0,10)))?['ВНИМАНИЕ: как минимум один источник не проверялся более 30 дней, имеет некорректную или будущую дату. Перед использованием необходима повторная проверка.']:[])
  ];
  return {intent:'market_funding',title:'Рыночное финансирование БВУ',body,sourceIds:[...(base.sourceUrl?['SRC-NBK-BASE-RATE']:[]),...products.map(x=>x.sourceId)]};
 }
 export function answerGuarantees(c:ExpertContext,userText:string): ExpertAnswer {
- const focused=/(?:гф\s*1|гарантийн\w*\s+фонд\w*\s*1|guarantee_fund_1)/i.test(userText);
+ const focused=/(?:гф\s*1|гарантийн[^\s]*\s+фонд[^\s]*\s*1|guarantee_fund_1)/i.test(userText);
  const gf1=c.decisions.find(x=>x.programId==='damu.guarantee.guarantee_fund_1');
  if(focused){
   if(!gf1)return {intent:'guarantee_routes',title:'Гарантийный фонд 1 «Даму»',body:['По текущему анализу ГФ-1 не найден. Требуется сверка с официальными правилами.'],sourceIds:[]};
